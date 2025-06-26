@@ -1,0 +1,18 @@
+{
+  "kafka": {
+    "brokers": ["b-1.your-cluster.abc123.c2.kafka.us-east-1.amazonaws.com:9098", "b-2.your-cluster.abc123.c2.kafka.us-east-1.amazonaws.com:9098"],
+    "clientId": "superstream-analyzer",
+    "useSasl": true,
+    "sasl": {
+      "mechanism": "AWS_MSK_IAM",
+      "authorizationIdentity": "arn:aws:iam::123456789012:user/your-iam-user",
+      "accessKeyId": "AKIAIOSFODNN7EXAMPLE",
+      "secretAccessKey": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+    }
+  },
+  "file": {
+    "outputDir": "./kafka-analysis",
+    "formats": ["json", "csv", "html"],
+    "includeMetadata": true
+  }
+} 

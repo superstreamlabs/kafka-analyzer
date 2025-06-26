@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Superstream Kafka Health Report</title>
+  <link href="https://fonts.googleapis.com/css?family=Inter:400,600,700&display=swap" rel="stylesheet">
+  <style>
+    html, body {
+      font-family: 'Inter', Arial, sans-serif !important;
+    }
+    body {
+      background: linear-gradient(135deg, #181A20 0%, #23272F 100%);
+      min-height: 100vh;
+      margin: 0;
+      font-family: 'Inter', Arial, sans-serif !important;
+      color: #F3F6F9;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+    .report-card {
+      background: #23272F;
+      border-radius: 18px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+      margin: 40px 0;
+      display: flex;
+      max-width: 1100px;
+      width: 100%;
+      overflow: hidden;
+      min-height: 600px;
+    }
+    .sidebar {
+      background: #181A20;
+      padding: 36px 28px 36px 28px;
+      width: 270px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      border-right: 1px solid #23272F;
+    }
+    .sidebar img {
+      width: 120px;
+      margin-bottom: 32px;
+    }
+    .sidebar h2 {
+      color: #3ED6B7;
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin: 0 0 18px 0;
+      letter-spacing: 1px;
+      font-family: 'Inter', Arial, sans-serif !important;
+    }
+    .summary-list {
+      width: 100%;
+      margin-top: 18px;
+    }
+    .summary-list p {
+      margin: 0 0 12px 0;
+      font-size: 1.05rem;
+      color: #B0B8C1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Inter', Arial, sans-serif !important;
+    }
+    .summary-list strong {
+      color: #F3F6F9;
+      font-weight: 600;
+      min-width: 120px;
+      display: inline-block;
+      font-family: 'Inter', Arial, sans-serif !important;
+    }
+    .main-content {
+      flex: 1;
+      padding: 40px 48px 40px 48px;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      font-family: 'Inter', Arial, sans-serif !important;
+    }
+    .main-content h1 {
+      font-size: 2.1rem;
+      font-weight: 700;
+      margin: 0 0 10px 0;
+      color: #3ED6B7;
+      letter-spacing: 1px;
+      font-family: 'Inter', Arial, sans-serif !important;
+    }
+    .main-content h2 {
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin: 24px 0 10px 0;
+      color: #6B6BFF;
+      font-family: 'Inter', Arial, sans-serif !important;
+    }
+    .health-check-section {
+      margin-top: 18px;
+    }
+    .health-summary {
+      background: #181A20;
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin-bottom: 18px;
+      color: #B0B8C1;
+      font-size: 1.01rem;
+      font-weight: 500;
+      display: flex;
+      gap: 18px;
+      align-items: center;
+      font-family: 'Inter', Arial, sans-serif !important;
+    }
+    .health-checks {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .health-check-item {
+      background: #181A20 !important;
+      border-radius: 10px;
+      border-left: 6px solid #3ED6B7;
+      padding: 18px 22px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+      color: #F3F6F9 !important;
+      transition: border-color 0.2s;
+      font-family: 'Inter', Arial, sans-serif !important;
+    }
+    .health-check-item * {
+      color: #F3F6F9 !important;
+      font-family: 'Inter', Arial, sans-serif !important;
+    }
+    .health-check-header {
+      font-weight: 600;
+      font-size: 1.1rem;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #F3F6F9 !important;
+      font-family: 'Inter', Arial, sans-serif !important;
+    }
+    .health-check-description {
+      color: #B0B8C1 !important;
+      font-size: 0.98em;
+      margin-bottom: 4px;
+      font-style: italic;
+      font-family: 'Inter', Arial, sans-serif !important;
+    }
+    .health-check-message {
+      margin-bottom: 4px;
+      color: #F3F6F9 !important;
+      font-family: 'Inter', Arial, sans-serif !important;
+    }
+    .health-check-recommendation {
+      color: #3ED6B7 !important;
+      font-style: italic;
+      font-family: 'Inter', Arial, sans-serif !important;
+    }
+    @media (max-width: 1100px) {
+      .report-card { max-width: 99vw; }
+    }
+    @media (max-width: 900px) {
+      .report-card { flex-direction: column; max-width: 98vw; }
+      .sidebar { width: 100%; border-right: none; border-bottom: 1px solid #23272F; flex-direction: row; justify-content: flex-start; padding: 24px 16px; }
+      .sidebar img { width: 70px; margin-bottom: 0; margin-right: 18px; }
+      .main-content { padding: 24px 12px; }
+    }
+    @media (max-width: 600px) {
+      .main-content { padding: 12px 2vw; }
+      .sidebar { padding: 12px 2vw; }
+    }
+    .main-content a, .main-content a:visited, .main-content a:active, .main-content a:focus, .main-content a:link {
+      color: #3ED6B7 !important;
+      text-decoration: underline;
+      transition: color 0.2s;
+    }
+    .main-content a:hover {
+      color: #6B6BFF !important;
+      text-decoration: underline;
+    }
+    .sidebar a, .sidebar a:visited, .sidebar a:active, .sidebar a:focus, .sidebar a:link {
+      color: #3ED6B7 !important;
+      text-decoration: underline;
+      transition: color 0.2s;
+    }
+    .sidebar a:hover {
+      color: #6B6BFF !important;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="report-card">
+    <div class="sidebar">
+      <a href="https://superstream.ai"><img src="../superstream-logo.png" alt="Superstream Logo" /></a>
+      <div>
+        <h2 style="font-size:0.95rem; font-weight:600; margin-bottom:12px;">Summary:</h2>
+        <div class="summary-list">
+          <p><strong>Vendor:</strong> Apache Kafka</p>
+          <p><strong>ZooKeepers:</strong> 1</p>
+          <p><strong>Brokers:</strong> 3</p>
+          <p><strong>Generated:</strong> 26.6.2025, 20:33:06</p>
+          <p><strong>Total Topics:</strong> 1</p>
+          <p><strong>User Topics:</strong> 1</p>
+          <p><strong>Internal Topics:</strong> 0</p>
+          <p><strong>Total Partitions:</strong> 3</p>
+          <p><strong>Topics with Issues:</strong> 0</p>
+        </div>
+      </div>
+    </div>
+    <div class="main-content">
+      <h1>Kafka Health Report</h1>
+      <div class="health-check-section">
+        
+      <div class="health-check-section">
+        <h3>🔍 Health Check Results</h3>
+        <div class="health-summary">
+          <strong>Summary:</strong> 
+          Total: 13 | 
+          ✅ Passed: 3 | 
+          ❌ Failed: 2 | 
+          ⚠️ Warnings: 5
+        </div>
+        <div class="health-checks">
+    
+        <div class="health-check-item" style="border-left: 4px solid #28a745; padding: 10px; margin: 10px 0; background-color: #f8f9fa;">
+          <div class="health-check-header" style="font-weight: bold; margin-bottom: 5px;">
+            ✅ Replication Factor vs Broker Count
+          </div>
+          
+            <div class="health-check-description" style="color: #6c757d; font-size: 0.9em; margin-bottom: 5px; font-style: italic;">
+              📋 Checks if any topic has a replication factor greater than the number of brokers. Healthy: All topics have RF ≤ broker count. Failed: Any topic has RF > broker count.
+            </div>
+          
+          <div class="health-check-message" style="margin-bottom: 5px;">
+            All topics have appropriate replication factor (≤ 3 brokers)
+          </div>
+          
+        </div>
+      
+        <div class="health-check-item" style="border-left: 4px solid #28a745; padding: 10px; margin: 10px 0; background-color: #f8f9fa;">
+          <div class="health-check-header" style="font-weight: bold; margin-bottom: 5px;">
+            ✅ Topic Partition Distribution
+          </div>
+          
+            <div class="health-check-description" style="color: #6c757d; font-size: 0.9em; margin-bottom: 5px; font-style: italic;">
+              📋 Checks if user topics have a balanced number of partitions. Healthy: Partition counts are similar. Warning: Large difference between min and max partitions.
+            </div>
+          
+          <div class="health-check-message" style="margin-bottom: 5px;">
+            Good partition distribution: avg=3.0, min=3, max=3
+          </div>
+          
+        </div>
+      
+        <div class="health-check-item" style="border-left: 4px solid #17a2b8; padding: 10px; margin: 10px 0; background-color: #f8f9fa;">
+          <div class="health-check-header" style="font-weight: bold; margin-bottom: 5px;">
+            ℹ️ Consumer Group Health
+          </div>
+          
+            <div class="health-check-description" style="color: #6c757d; font-size: 0.9em; margin-bottom: 5px; font-style: italic;">
+              📋 Checks if all consumer groups have active members. Healthy: All groups have members. Warning: Some groups have no active members.
+            </div>
+          
+          <div class="health-check-message" style="margin-bottom: 5px;">
+            No consumer groups found
+          </div>
+          
+        </div>
+      
+        <div class="health-check-item" style="border-left: 4px solid #17a2b8; padding: 10px; margin: 10px 0; background-color: #f8f9fa;">
+          <div class="health-check-header" style="font-weight: bold; margin-bottom: 5px;">
+            ℹ️ Internal Topics Health
+          </div>
+          
+            <div class="health-check-description" style="color: #6c757d; font-size: 0.9em; margin-bottom: 5px; font-style: italic;">
+              📋 Checks if all internal topics (names starting with __) have partitions > 0. Healthy: All internal topics have partitions. Failed: Any internal topic has 0 or missing partitions.
+            </div>
+          
+          <div class="health-check-message" style="margin-bottom: 5px;">
+            No internal topics found
+          </div>
+          
+        </div>
+      
+        <div class="health-check-item" style="border-left: 4px solid #ffc107; padding: 10px; margin: 10px 0; background-color: #f8f9fa;">
+          <div class="health-check-header" style="font-weight: bold; margin-bottom: 5px;">
+            ⚠️ Apache Kafka Specific Health
+          </div>
+          
+            <div class="health-check-description" style="color: #6c757d; font-size: 0.9em; margin-bottom: 5px; font-style: italic;">
+              📋 Checks if Apache Kafka system topics (names containing __consumer_offsets, __transaction_state, or __kafka_connect) exist and are healthy. Healthy: All Apache Kafka system topics have partitions and replication > 0. Warning: No Apache Kafka system topics found. Failed: Any Apache Kafka system topic has 0 partitions or replication.
+            </div>
+          
+          <div class="health-check-message" style="margin-bottom: 5px;">
+            No Apache Kafka system topics found - this might indicate a new cluster or configuration issue
+          </div>
+          
+        </div>
+      
+        <div class="health-check-item" style="border-left: 4px solid #ffc107; padding: 10px; margin: 10px 0; background-color: #f8f9fa;">
+          <div class="health-check-header" style="font-weight: bold; margin-bottom: 5px;">
+            ⚠️ Rack Awareness
+          </div>
+          
+            <div class="health-check-description" style="color: #6c757d; font-size: 0.9em; margin-bottom: 5px; font-style: italic;">
+              📋 Checks if rack awareness is configured in the cluster. Healthy: Rack awareness is configured. Warning: Rack awareness is not configured.
+            </div>
+          
+          <div class="health-check-message" style="margin-bottom: 5px;">
+            Rack awareness is not configured - no brokers have rack information
+          </div>
+          
+            <div class="health-check-recommendation" style="color: #17a2b8; font-style: italic;">
+              💡 Recommendation: Consider enabling rack awareness for better availability and fault tolerance
+            </div>
+          
+        </div>
+      
+        <div class="health-check-item" style="border-left: 4px solid #dc3545; padding: 10px; margin: 10px 0; background-color: #f8f9fa;">
+          <div class="health-check-header" style="font-weight: bold; margin-bottom: 5px;">
+            ❌ Replica Distribution
+          </div>
+          
+            <div class="health-check-description" style="color: #6c757d; font-size: 0.9em; margin-bottom: 5px; font-style: italic;">
+              📋 Checks if data replicas are evenly distributed across all brokers. Healthy: Each broker carries a similar number of replicas. Warning/Failed: Some brokers carry significantly more replicas than others, which can cause performance issues.
+            </div>
+          
+          <div class="health-check-message" style="margin-bottom: 5px;">
+            Poor replica distribution: Brokers carry 2.0 replicas on average. Most loaded broker: 3, least loaded: 0 (150.0% difference)
+          </div>
+          
+            <div class="health-check-recommendation" style="color: #17a2b8; font-style: italic;">
+              💡 Recommendation: Rebalance replicas across brokers to improve cluster performance and fault tolerance. The most loaded broker is handling significantly more work than others.
+            </div>
+          
+        </div>
+      
+        <div class="health-check-item" style="border-left: 4px solid #ffc107; padding: 10px; margin: 10px 0; background-color: #f8f9fa;">
+          <div class="health-check-header" style="font-weight: bold; margin-bottom: 5px;">
+            ⚠️ Metrics Configuration
+          </div>
+          
+            <div class="health-check-description" style="color: #6c757d; font-size: 0.9em; margin-bottom: 5px; font-style: italic;">
+              📋 Checks if monitoring metrics are properly configured. For AWS MSK: Checks Open Monitoring with Prometheus JMX exporter. For others: Checks JMX metrics configuration. Healthy: Metrics are enabled and accessible. Warning: Metrics are not configured or partially configured.
+            </div>
+          
+          <div class="health-check-message" style="margin-bottom: 5px;">
+            No JMX metrics configuration detected on any brokers
+          </div>
+          
+            <div class="health-check-recommendation" style="color: #17a2b8; font-style: italic;">
+              💡 Recommendation: Enable JMX metrics on brokers for better monitoring, alerting, and performance analysis
+            </div>
+          
+        </div>
+      
+        <div class="health-check-item" style="border-left: 4px solid #17a2b8; padding: 10px; margin: 10px 0; background-color: #f8f9fa;">
+          <div class="health-check-header" style="font-weight: bold; margin-bottom: 5px;">
+            ℹ️ Generic Kafka Logging Configuration
+          </div>
+          
+            <div class="health-check-description" style="color: #6c757d; font-size: 0.9em; margin-bottom: 5px; font-style: italic;">
+              📋 Checks if logging configuration is properly configured. For AWS MSK: Checks LoggingInfo configuration and CloudTrail. For Confluent Cloud/Aiven: Built-in logging is available. For others: Checks log4j configuration. Healthy: Logging is enabled and configured. Warning: Logging is not configured or partially configured.
+            </div>
+          
+          <div class="health-check-message" style="margin-bottom: 5px;">
+            Generic Kafka logging configuration check
+          </div>
+          
+            <div class="health-check-recommendation" style="color: #17a2b8; font-style: italic;">
+              💡 Recommendation: Verify log4j configuration and log directory permissions in server.properties
+            </div>
+          
+        </div>
+      
+        <div class="health-check-item" style="border-left: 4px solid #dc3545; padding: 10px; margin: 10px 0; background-color: #f8f9fa;">
+          <div class="health-check-header" style="font-weight: bold; margin-bottom: 5px;">
+            ❌ Generic Kafka Authentication Configuration
+          </div>
+          
+            <div class="health-check-description" style="color: #6c757d; font-size: 0.9em; margin-bottom: 5px; font-style: italic;">
+              📋 Checks if unauthenticated access is enabled. For AWS MSK: Checks if SASL or SSL is configured. For Confluent Cloud/Aiven: Built-in authentication prevents unauthenticated access. For others: Checks if SASL or SSL is configured. Healthy: Authentication is enabled (no unauthenticated access). Failed: Unauthenticated access is enabled (security risk).
+            </div>
+          
+          <div class="health-check-message" style="margin-bottom: 5px;">
+            Unauthenticated access is enabled - this is a security risk
+          </div>
+          
+            <div class="health-check-recommendation" style="color: #17a2b8; font-style: italic;">
+              💡 Recommendation: Enable SASL or SSL authentication in server.properties for better security
+            </div>
+          
+        </div>
+      
+        <div class="health-check-item" style="border-left: 4px solid #ffc107; padding: 10px; margin: 10px 0; background-color: #f8f9fa;">
+          <div class="health-check-header" style="font-weight: bold; margin-bottom: 5px;">
+            ⚠️ Generic Kafka Quotas Configuration
+          </div>
+          
+            <div class="health-check-description" style="color: #6c757d; font-size: 0.9em; margin-bottom: 5px; font-style: italic;">
+              📋 Checks if Kafka quotas are configured and being used. For AWS MSK: Checks quota configuration via AWS console/CLI. For Confluent Cloud/Aiven: Built-in quota management is available. For others: Checks server.properties and kafka-configs.sh for quota settings. Healthy: Quotas are configured and managed. Info: Quotas configuration check available.
+            </div>
+          
+          <div class="health-check-message" style="margin-bottom: 5px;">
+            No quota configuration detected in Kafka cluster
+          </div>
+          
+            <div class="health-check-recommendation" style="color: #17a2b8; font-style: italic;">
+              💡 Recommendation: Configure quotas in server.properties or use kafka-configs.sh to set client quotas for better resource management
+            </div>
+          
+        </div>
+      
+        <div class="health-check-item" style="border-left: 4px solid #ffc107; padding: 10px; margin: 10px 0; background-color: #f8f9fa;">
+          <div class="health-check-header" style="font-weight: bold; margin-bottom: 5px;">
+            ⚠️ Payload Compression
+          </div>
+          
+            <div class="health-check-description" style="color: #6c757d; font-size: 0.9em; margin-bottom: 5px; font-style: italic;">
+              📋 Checks if payload compression is enabled on user topics. Analyzes compression.type, compression, and producer.compression.type configurations. Healthy: All user topics have compression enabled (100%). Warning: Some or no topics have compression enabled (<100%). Info: No user topics to analyze.
+            </div>
+          
+          <div class="health-check-message" style="margin-bottom: 5px;">
+            No compression detected on any of the 1 user topics (0%)
+          </div>
+          
+            <div class="health-check-recommendation" style="color: #17a2b8; font-style: italic;">
+              💡 Recommendation: Enable compression on topics to reduce storage usage and improve network performance
+            </div>
+          
+        </div>
+      
+        <div class="health-check-item" style="border-left: 4px solid #28a745; padding: 10px; margin: 10px 0; background-color: #f8f9fa;">
+          <div class="health-check-header" style="font-weight: bold; margin-bottom: 5px;">
+            ✅ Infinite Retention Policy
+          </div>
+          
+            <div class="health-check-description" style="color: #6c757d; font-size: 0.9em; margin-bottom: 5px; font-style: italic;">
+              📋 Checks if any topics have infinite retention policy enabled (retention.ms = infinite). Healthy: No topics have infinite retention. Warning: Some topics have infinite retention policy (bad practice). Info: Unable to verify retention policy.
+            </div>
+          
+          <div class="health-check-message" style="margin-bottom: 5px;">
+            No topics have infinite retention policy enabled
+          </div>
+          
+        </div>
+      
+        </div>
+      </div>
+    
+      </div>
+      <div style="margin-top: 30px; padding: 15px; background: #181A20; border-radius: 5px; color: #B0B8C1; font-family: 'Inter', Arial, sans-serif !important;">
+        <p><em>Generated by <a href="https://superstream.ai">Superstream</a> Kafka Analyzer</em><br>
+        Wants to fix your Kafka issues automatically and continuously? <a href="https://superstream.ai">Learn more</a>
+        <br><small>All rights reserved to Superstream Labs Inc 2025. You own your data and it is never shared with anyone, including us.</small>
+        </p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

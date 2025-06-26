@@ -1,0 +1,17 @@
+{
+  "kafka": {
+    "brokers": ["kafka-xxxxx-aiven-kafka.aivencloud.com:12345"],
+    "clientId": "superstream-analyzer",
+    "useSasl": true,
+    "sasl": {
+      "mechanism": "PLAIN",
+      "username": "avnadmin",
+      "password": "YOUR_AVNADMIN_PASSWORD"
+    }
+  },
+  "file": {
+    "outputDir": "./kafka-analysis",
+    "formats": ["json", "csv", "html", "txt"],
+    "includeMetadata": true
+  }
+} 

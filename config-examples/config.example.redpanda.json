@@ -1,0 +1,17 @@
+{
+  "kafka": {
+    "brokers": ["redpanda1.company.com:9092", "redpanda2.company.com:9092", "redpanda3.company.com:9092"],
+    "clientId": "superstream-analyzer",
+    "useSasl": true,
+    "sasl": {
+      "mechanism": "SCRAM-SHA-256",
+      "username": "your-redpanda-user",
+      "password": "your-redpanda-password"
+    }
+  },
+  "file": {
+    "outputDir": "./kafka-analysis",
+    "formats": ["json", "csv", "html", "txt"],
+    "includeMetadata": true
+  }
+} 

@@ -1,0 +1,14 @@
+{
+    "kafka": {
+      "brokers": ["kafka-0.stg.aws.superstream.ai:9095", "kafka-1.stg.aws.superstream.ai:9095", "kafka-2.stg.aws.superstream.ai:9095"],
+      "clientId": "superstream-analyzer",
+      "vendor": "apache",
+      "useSasl": false
+    },
+    "file": {
+      "outputDir": "./kafka-analysis",
+      "formats": ["html"],
+      "includeMetadata": false,
+      "includeTimestamp": false
+    }
+  }

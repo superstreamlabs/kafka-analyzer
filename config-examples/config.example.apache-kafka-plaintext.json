@@ -1,0 +1,14 @@
+{
+  "kafka": {
+    "brokers": ["localhost:9092"],
+    "clientId": "superstream-analyzer",
+    "vendor": "apache",
+    "useSasl": false
+  },
+  "file": {
+    "outputDir": "./kafka-analysis",
+    "formats": ["json", "csv", "html", "txt"],
+    "includeMetadata": true,
+    "includeTimestamp": true
+  }
+} 

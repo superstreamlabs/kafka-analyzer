@@ -1,0 +1,20 @@
+{
+  "kafka": {
+    "brokers": [
+      "b-2-public.superstreamstg.halbm0.c1.kafka.eu-central-1.amazonaws.com:9198",
+      "b-1-public.superstreamstg.halbm0.c1.kafka.eu-central-1.amazonaws.com:9198"
+    ],
+    "clientId": "superstream-analyzer",
+    "vendor": "aws-msk",
+    "useSasl": true,
+    "sasl": {
+      "mechanism": "oauthbearer"
+    }
+  },
+  "file": {
+    "outputDir": "./kafka-analysis",
+    "formats": ["html"],
+    "includeMetadata": true,
+    "includeTimestamp": true
+  }
+} 

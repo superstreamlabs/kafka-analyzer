@@ -1,0 +1,17 @@
+{
+  "kafka": {
+    "brokers": ["kafka1.company.com:9092", "kafka2.company.com:9092", "kafka3.company.com:9092"],
+    "clientId": "superstream-analyzer",
+    "useSasl": true,
+    "sasl": {
+      "mechanism": "PLAIN",
+      "username": "your-username",
+      "password": "your-password"
+    }
+  },
+  "file": {
+    "outputDir": "./kafka-analysis",
+    "formats": ["json", "csv", "html", "txt"],
+    "includeMetadata": true
+  }
+} 
