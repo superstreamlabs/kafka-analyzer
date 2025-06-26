@@ -56,12 +56,14 @@ npx superstream-kafka-analyzer --config config.json
   "kafka": {
     "brokers": "localhost:9092",
     "clientId": "superstream-analyzer",
+    "vendor": "apache",
     "useSasl": false
   },
   "file": {
     "outputDir": "./kafka-analysis",
-    "formats": ["json", "csv", "html", "txt"],
-    "includeMetadata": true
+    "formats": ["html"],
+    "includeMetadata": true,
+    "includeTimestamp": true
   }
 }
 ```
@@ -72,6 +74,7 @@ npx superstream-kafka-analyzer --config config.json
   "kafka": {
     "brokers": ["kafka1.example.com:9092", "kafka2.example.com:9092", "kafka3.example.com:9092"],
     "clientId": "superstream-analyzer",
+    "vendor": "apache",
     "useSasl": true,
     "sasl": {
       "mechanism": "PLAIN",
@@ -81,8 +84,9 @@ npx superstream-kafka-analyzer --config config.json
   },
   "file": {
     "outputDir": "./kafka-analysis",
-    "formats": ["json", "csv", "html"],
-    "includeMetadata": true
+    "formats": ["html"],
+    "includeMetadata": true,
+    "includeTimestamp": true
   }
 }
 ```
@@ -93,6 +97,7 @@ npx superstream-kafka-analyzer --config config.json
   "kafka": {
     "brokers": ["b-1.your-cluster.abc123.c2.kafka.us-east-1.amazonaws.com:9092"],
     "clientId": "superstream-analyzer",
+    "vendor": "aws-msk",
     "useSasl": true,
     "sasl": {
       "mechanism": "SCRAM-SHA-512",
@@ -102,8 +107,9 @@ npx superstream-kafka-analyzer --config config.json
   },
   "file": {
     "outputDir": "./kafka-analysis",
-    "formats": ["json", "csv", "html", "txt"],
-    "includeMetadata": true
+    "formats": ["html"],
+    "includeMetadata": true,
+    "includeTimestamp": true
   }
 }
 ```
@@ -112,20 +118,65 @@ npx superstream-kafka-analyzer --config config.json
 ```json
 {
   "kafka": {
-    "brokers": ["b-1.your-cluster.abc123.c2.kafka.us-east-1.amazonaws.com:9098"],
+    "brokers": ["b-1.your-cluster.abc123.c2.kafka.us-east-1.amazonaws.com:9198"],
     "clientId": "superstream-analyzer",
+    "vendor": "aws-msk",
     "useSasl": true,
     "sasl": {
-      "mechanism": "AWS_MSK_IAM",
-      "authorizationIdentity": "arn:aws:iam::123456789012:user/your-iam-user",
-      "accessKeyId": "AKIAIOSFODNN7EXAMPLE",
-      "secretAccessKey": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+      "mechanism": "oauthbearer"
     }
   },
   "file": {
     "outputDir": "./kafka-analysis",
-    "formats": ["json", "csv", "html"],
-    "includeMetadata": true
+    "formats": ["html"],
+    "includeMetadata": true,
+    "includeTimestamp": true
+  }
+}
+```
+
+**Confluent Cloud** (`config.example.confluent-cloud.json`):
+```json
+{
+  "kafka": {
+    "brokers": ["pkc-xxxxx.region.cloud:9092"],
+    "clientId": "superstream-analyzer",
+    "vendor": "confluent-cloud",
+    "useSasl": true,
+    "sasl": {
+      "mechanism": "PLAIN",
+      "username": "your-api-key",
+      "password": "your-api-secret"
+    }
+  },
+  "file": {
+    "outputDir": "./kafka-analysis",
+    "formats": ["html"],
+    "includeMetadata": true,
+    "includeTimestamp": true
+  }
+}
+```
+
+**Aiven Kafka** (`config.example.aiven-kafka.json`):
+```json
+{
+  "kafka": {
+    "brokers": ["your-aiven-cluster.aivencloud.com:12345"],
+    "clientId": "superstream-analyzer",
+    "vendor": "aiven",
+    "useSasl": true,
+    "sasl": {
+      "mechanism": "SCRAM-SHA-256",
+      "username": "your-username",
+      "password": "your-password"
+    }
+  },
+  "file": {
+    "outputDir": "./kafka-analysis",
+    "formats": ["html"],
+    "includeMetadata": true,
+    "includeTimestamp": true
   }
 }
 ```
@@ -456,7 +507,7 @@ For issues and questions:
 - Ensure configuration matches the examples provided
 - Email us: team@superstream.ai
 
-## ✅ Health Checks Performed
+## ✅ Health/Configuration Checks
 
 SuperStream Kafka Analyzer performs a comprehensive set of health checks on your Kafka cluster to help you identify issues and optimize your setup:
 
