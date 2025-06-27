@@ -4,6 +4,8 @@
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/Version-1.0.0-orange.svg)](package.json)
 
+![Health Check Screenshot](static/Health-check-screenshot.png)
+
 Interactive CLI for analyzing Kafka health and configuration according to best practices and industry standards.
 
 Made with ❤️ by the [Superstream](https://superstream.ai) Team
