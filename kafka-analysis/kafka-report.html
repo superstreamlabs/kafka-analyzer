@@ -192,18 +192,17 @@
 <body>
   <div class="report-card">
     <div class="sidebar">
-      <a href="https://superstream.ai"><img src="../static/superstream-logo.png" alt="Superstream Logo" /></a>
+      <img src="static/superstream-logo.png" alt="Superstream Logo" />
       <div>
-        <h2 style="font-size:0.95rem; font-weight:600; margin-bottom:12px;">Summary:</h2>
         <div class="summary-list">
-          <p><strong>Vendor:</strong> Apache Kafka</p>
-          <p><strong>ZooKeepers:</strong> 1</p>
-          <p><strong>Brokers:</strong> 3</p>
-          <p><strong>Generated:</strong> 26.6.2025, 20:33:06</p>
-          <p><strong>Total Topics:</strong> 1</p>
-          <p><strong>User Topics:</strong> 1</p>
-          <p><strong>Internal Topics:</strong> 0</p>
-          <p><strong>Total Partitions:</strong> 3</p>
+          <p><strong>Vendor:</strong> AWS MSK</p>
+          <p><strong>ZooKeepers:</strong> 2</p>
+          <p><strong>Brokers:</strong> 2</p>
+          <p><strong>Generated:</strong> 6/27/2025, 9:54:18 PM</p>
+          <p><strong>Total Topics:</strong> 5</p>
+          <p><strong>User Topics:</strong> 3</p>
+          <p><strong>Internal Topics:</strong> 2</p>
+          <p><strong>Total Partitions:</strong> 57</p>
           <p><strong>Topics with Issues:</strong> 0</p>
         </div>
       </div>
@@ -216,10 +215,10 @@
         <h3>🔍 Health Check Results</h3>
         <div class="health-summary">
           <strong>Summary:</strong> 
-          Total: 13 | 
-          ✅ Passed: 3 | 
-          ❌ Failed: 2 | 
-          ⚠️ Warnings: 5
+          Total: 16 | 
+          ✅ Passed: 10 | 
+          ❌ Failed: 0 | 
+          ⚠️ Warnings: 6
         </div>
         <div class="health-checks">
     
@@ -233,7 +232,7 @@
             </div>
           
           <div class="health-check-message" style="margin-bottom: 5px;">
-            All topics have appropriate replication factor (≤ 3 brokers)
+            All topics have appropriate replication factor (≤ 2 brokers)
           </div>
           
         </div>
@@ -248,14 +247,14 @@
             </div>
           
           <div class="health-check-message" style="margin-bottom: 5px;">
-            Good partition distribution: avg=3.0, min=3, max=3
+            Good partition distribution: avg=1.7, min=1, max=3
           </div>
           
         </div>
       
-        <div class="health-check-item" style="border-left: 4px solid #17a2b8; padding: 10px; margin: 10px 0; background-color: #f8f9fa;">
+        <div class="health-check-item" style="border-left: 4px solid #ffc107; padding: 10px; margin: 10px 0; background-color: #f8f9fa;">
           <div class="health-check-header" style="font-weight: bold; margin-bottom: 5px;">
-            ℹ️ Consumer Group Health
+            ⚠️ Consumer Group Health
           </div>
           
             <div class="health-check-description" style="color: #6c757d; font-size: 0.9em; margin-bottom: 5px; font-style: italic;">
@@ -263,14 +262,18 @@
             </div>
           
           <div class="health-check-message" style="margin-bottom: 5px;">
-            No consumer groups found
+            4 consumer group(s) have no active members: amazon.msk.canary.group.broker-1, superstream-agent-consumer-223672026, superstream-agent-consumer-223671990, amazon.msk.canary.group.broker-2
           </div>
+          
+            <div class="health-check-recommendation" style="color: #17a2b8; font-style: italic;">
+              💡 Recommendation: Consider cleaning up unused consumer groups
+            </div>
           
         </div>
       
-        <div class="health-check-item" style="border-left: 4px solid #17a2b8; padding: 10px; margin: 10px 0; background-color: #f8f9fa;">
+        <div class="health-check-item" style="border-left: 4px solid #28a745; padding: 10px; margin: 10px 0; background-color: #f8f9fa;">
           <div class="health-check-header" style="font-weight: bold; margin-bottom: 5px;">
-            ℹ️ Internal Topics Health
+            ✅ Internal Topics Health
           </div>
           
             <div class="health-check-description" style="color: #6c757d; font-size: 0.9em; margin-bottom: 5px; font-style: italic;">
@@ -278,14 +281,51 @@
             </div>
           
           <div class="health-check-message" style="margin-bottom: 5px;">
-            No internal topics found
+            All 2 internal topics are healthy
           </div>
           
         </div>
       
-        <div class="health-check-item" style="border-left: 4px solid #ffc107; padding: 10px; margin: 10px 0; background-color: #f8f9fa;">
+        <div class="health-check-item" style="border-left: 4px solid #28a745; padding: 10px; margin: 10px 0; background-color: #f8f9fa;">
           <div class="health-check-header" style="font-weight: bold; margin-bottom: 5px;">
-            ⚠️ Apache Kafka Specific Health
+            ✅ Under-Replicated Partitions
+          </div>
+          
+          <div class="health-check-message" style="margin-bottom: 5px;">
+            All topics have the expected number of in-sync replicas
+          </div>
+          
+        </div>
+      
+        <div class="health-check-item" style="border-left: 4px solid #28a745; padding: 10px; margin: 10px 0; background-color: #f8f9fa;">
+          <div class="health-check-header" style="font-weight: bold; margin-bottom: 5px;">
+            ✅ Min In-Sync Replicas Configuration
+          </div>
+          
+          <div class="health-check-message" style="margin-bottom: 5px;">
+            All topics have appropriate min.insync.replicas configuration
+          </div>
+          
+        </div>
+      
+        <div class="health-check-item" style="border-left: 4px solid #28a745; padding: 10px; margin: 10px 0; background-color: #f8f9fa;">
+          <div class="health-check-header" style="font-weight: bold; margin-bottom: 5px;">
+            ✅ AWS MSK Specific Health
+          </div>
+          
+            <div class="health-check-description" style="color: #6c757d; font-size: 0.9em; margin-bottom: 5px; font-style: italic;">
+              📋 Checks if AWS MSK system topics (names containing __amazon_msk_ or __consumer_offsets) exist and are healthy. Healthy: All MSK system topics have partitions and replication > 0. Warning: No MSK system topics found. Failed: Any MSK system topic has 0 partitions or replication.
+            </div>
+          
+          <div class="health-check-message" style="margin-bottom: 5px;">
+            All 2 AWS MSK system topics are healthy
+          </div>
+          
+        </div>
+      
+        <div class="health-check-item" style="border-left: 4px solid #28a745; padding: 10px; margin: 10px 0; background-color: #f8f9fa;">
+          <div class="health-check-header" style="font-weight: bold; margin-bottom: 5px;">
+            ✅ Apache Kafka Specific Health
           </div>
           
             <div class="health-check-description" style="color: #6c757d; font-size: 0.9em; margin-bottom: 5px; font-style: italic;">
@@ -293,7 +333,7 @@
             </div>
           
           <div class="health-check-message" style="margin-bottom: 5px;">
-            No Apache Kafka system topics found - this might indicate a new cluster or configuration issue
+            All 1 Apache Kafka system topics are healthy
           </div>
           
         </div>
@@ -317,9 +357,9 @@
           
         </div>
       
-        <div class="health-check-item" style="border-left: 4px solid #dc3545; padding: 10px; margin: 10px 0; background-color: #f8f9fa;">
+        <div class="health-check-item" style="border-left: 4px solid #28a745; padding: 10px; margin: 10px 0; background-color: #f8f9fa;">
           <div class="health-check-header" style="font-weight: bold; margin-bottom: 5px;">
-            ❌ Replica Distribution
+            ✅ Replica Distribution
           </div>
           
             <div class="health-check-description" style="color: #6c757d; font-size: 0.9em; margin-bottom: 5px; font-style: italic;">
@@ -327,18 +367,14 @@
             </div>
           
           <div class="health-check-message" style="margin-bottom: 5px;">
-            Poor replica distribution: Brokers carry 2.0 replicas on average. Most loaded broker: 3, least loaded: 0 (150.0% difference)
+            Good replica balance: Brokers carry 56.0 replicas on average. Most loaded broker: 57, least loaded: 55 (3.6% difference)
           </div>
-          
-            <div class="health-check-recommendation" style="color: #17a2b8; font-style: italic;">
-              💡 Recommendation: Rebalance replicas across brokers to improve cluster performance and fault tolerance. The most loaded broker is handling significantly more work than others.
-            </div>
           
         </div>
       
         <div class="health-check-item" style="border-left: 4px solid #ffc107; padding: 10px; margin: 10px 0; background-color: #f8f9fa;">
           <div class="health-check-header" style="font-weight: bold; margin-bottom: 5px;">
-            ⚠️ Metrics Configuration
+            ⚠️ AWS MSK Open Monitoring
           </div>
           
             <div class="health-check-description" style="color: #6c757d; font-size: 0.9em; margin-bottom: 5px; font-style: italic;">
@@ -346,18 +382,18 @@
             </div>
           
           <div class="health-check-message" style="margin-bottom: 5px;">
-            No JMX metrics configuration detected on any brokers
+            Open Monitoring not detected - port 11001 is not accessible on any brokers
           </div>
           
             <div class="health-check-recommendation" style="color: #17a2b8; font-style: italic;">
-              💡 Recommendation: Enable JMX metrics on brokers for better monitoring, alerting, and performance analysis
+              💡 Recommendation: Enable Open Monitoring in AWS MSK console to expose metrics on port 11001
             </div>
           
         </div>
       
-        <div class="health-check-item" style="border-left: 4px solid #17a2b8; padding: 10px; margin: 10px 0; background-color: #f8f9fa;">
+        <div class="health-check-item" style="border-left: 4px solid #ffc107; padding: 10px; margin: 10px 0; background-color: #f8f9fa;">
           <div class="health-check-header" style="font-weight: bold; margin-bottom: 5px;">
-            ℹ️ Generic Kafka Logging Configuration
+            ⚠️ AWS MSK Logging Configuration
           </div>
           
             <div class="health-check-description" style="color: #6c757d; font-size: 0.9em; margin-bottom: 5px; font-style: italic;">
@@ -365,18 +401,18 @@
             </div>
           
           <div class="health-check-message" style="margin-bottom: 5px;">
-            Generic Kafka logging configuration check
+            Unable to initialize AWS MSK client
           </div>
           
             <div class="health-check-recommendation" style="color: #17a2b8; font-style: italic;">
-              💡 Recommendation: Verify log4j configuration and log directory permissions in server.properties
+              💡 Recommendation: Ensure AWS SDK is properly installed and AWS credentials are configured
             </div>
           
         </div>
       
-        <div class="health-check-item" style="border-left: 4px solid #dc3545; padding: 10px; margin: 10px 0; background-color: #f8f9fa;">
+        <div class="health-check-item" style="border-left: 4px solid #28a745; padding: 10px; margin: 10px 0; background-color: #f8f9fa;">
           <div class="health-check-header" style="font-weight: bold; margin-bottom: 5px;">
-            ❌ Generic Kafka Authentication Configuration
+            ✅ AWS MSK Authentication Configuration
           </div>
           
             <div class="health-check-description" style="color: #6c757d; font-size: 0.9em; margin-bottom: 5px; font-style: italic;">
@@ -384,18 +420,18 @@
             </div>
           
           <div class="health-check-message" style="margin-bottom: 5px;">
-            Unauthenticated access is enabled - this is a security risk
+            Authentication is configured (SASL or SSL enabled)
           </div>
           
             <div class="health-check-recommendation" style="color: #17a2b8; font-style: italic;">
-              💡 Recommendation: Enable SASL or SSL authentication in server.properties for better security
+              💡 Recommendation: Authentication provides secure access control for your MSK cluster
             </div>
           
         </div>
       
         <div class="health-check-item" style="border-left: 4px solid #ffc107; padding: 10px; margin: 10px 0; background-color: #f8f9fa;">
           <div class="health-check-header" style="font-weight: bold; margin-bottom: 5px;">
-            ⚠️ Generic Kafka Quotas Configuration
+            ⚠️ AWS MSK Quotas Configuration
           </div>
           
             <div class="health-check-description" style="color: #6c757d; font-size: 0.9em; margin-bottom: 5px; font-style: italic;">
@@ -403,11 +439,11 @@
             </div>
           
           <div class="health-check-message" style="margin-bottom: 5px;">
-            No quota configuration detected in Kafka cluster
+            Unable to initialize AWS MSK client for quotas check
           </div>
           
             <div class="health-check-recommendation" style="color: #17a2b8; font-style: italic;">
-              💡 Recommendation: Configure quotas in server.properties or use kafka-configs.sh to set client quotas for better resource management
+              💡 Recommendation: Ensure AWS SDK is properly installed and AWS credentials are configured
             </div>
           
         </div>
@@ -422,7 +458,7 @@
             </div>
           
           <div class="health-check-message" style="margin-bottom: 5px;">
-            No compression detected on any of the 1 user topics (0%)
+            No compression detected on any of the 3 user topics (0%)
           </div>
           
             <div class="health-check-recommendation" style="color: #17a2b8; font-style: italic;">
@@ -452,9 +488,14 @@
       </div>
       <div style="margin-top: 30px; padding: 15px; background: #181A20; border-radius: 5px; color: #B0B8C1; font-family: 'Inter', Arial, sans-serif !important;">
         <p><em>Generated by <a href="https://superstream.ai">Superstream</a> Kafka Analyzer</em><br>
-        Wants to fix your Kafka issues automatically and continuously? <a href="https://superstream.ai">Learn more</a>
+        Wants to fix your Kafka issues automatically and continuously? <a href="https://superstream.ai">Learn more</a><br>
         <br><small>All rights reserved to Superstream Labs Inc 2025. You own your data and it is never shared with anyone, including us.</small>
         </p>
+      </div>
+      <div style="margin-top: 30px; text-align: center;">
+        <a href="https://superstream.ai" target="_blank">
+          <img src="../static/superstream-cta.png" alt="Superstream - Fix your Kafka issues automatically" style="max-width: 100%; height: auto; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" />
+        </a>
       </div>
     </div>
   </div>

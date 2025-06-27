@@ -465,7 +465,7 @@ class FileService {
 <body>
   <div class="report-card">
     <div class="sidebar">
-      <img src="static/superstream-logo.png" alt="Superstream Logo" />
+      <img src="../static/superstream-logo.png" alt="Superstream Logo" />
       <div>
         <div class="summary-list">
           <p><strong>Vendor:</strong> ${this.formatVendorName(vendor)}</p>
@@ -493,7 +493,7 @@ class FileService {
       </div>
       <div style="margin-top: 30px; text-align: center;">
         <a href="https://superstream.ai" target="_blank">
-          <img src="static/Superstream CTA.png" alt="Superstream - Fix your Kafka issues automatically" style="max-width: 100%; height: auto; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" />
+          <img src="../static/superstream-cta.png" alt="Superstream - Fix your Kafka issues automatically" style="max-width: 100%; height: auto; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" />
         </a>
       </div>
     </div>
