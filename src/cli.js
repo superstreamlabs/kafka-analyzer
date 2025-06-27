@@ -92,12 +92,8 @@ class CLI {
       {
         type: 'input',
         name: 'clientId',
-        message: 'Client ID:',
-        default: 'superstream-analyzer',
-        validate: (input) => {
-          if (!input.trim()) return 'Client ID is required';
-          return true;
-        }
+        message: 'Client ID (press Enter for default):',
+        default: 'superstream-analyzer'
       }
     ]);
 
