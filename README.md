@@ -56,7 +56,7 @@ npx superstream-kafka-analyzer --config config.json
 ```json
 {
   "kafka": {
-    "brokers": "localhost:9092",
+    "bootstrap_servers": "localhost:9092",
     "clientId": "superstream-analyzer",
     "vendor": "apache",
     "useSasl": false
@@ -74,7 +74,7 @@ npx superstream-kafka-analyzer --config config.json
 ```json
 {
   "kafka": {
-    "brokers": ["kafka1.example.com:9092", "kafka2.example.com:9092", "kafka3.example.com:9092"],
+    "bootstrap_servers": ["kafka1.example.com:9092", "kafka2.example.com:9092", "kafka3.example.com:9092"],
     "clientId": "superstream-analyzer",
     "vendor": "apache",
     "useSasl": true,
@@ -97,7 +97,7 @@ npx superstream-kafka-analyzer --config config.json
 ```json
 {
   "kafka": {
-    "brokers": ["b-1.your-cluster.abc123.c2.kafka.us-east-1.amazonaws.com:9092"],
+    "bootstrap_servers": ["b-1.your-cluster.abc123.c2.kafka.us-east-1.amazonaws.com:9092"],
     "clientId": "superstream-analyzer",
     "vendor": "aws-msk",
     "useSasl": true,
@@ -120,7 +120,7 @@ npx superstream-kafka-analyzer --config config.json
 ```json
 {
   "kafka": {
-    "brokers": ["b-1.your-cluster.abc123.c2.kafka.us-east-1.amazonaws.com:9198"],
+    "bootstrap_servers": ["b-1.your-cluster.abc123.c2.kafka.us-east-1.amazonaws.com:9198"],
     "clientId": "superstream-analyzer",
     "vendor": "aws-msk",
     "useSasl": true,
@@ -141,7 +141,7 @@ npx superstream-kafka-analyzer --config config.json
 ```json
 {
   "kafka": {
-    "brokers": ["pkc-xxxxx.region.cloud:9092"],
+    "bootstrap_servers": ["pkc-xxxxx.region.cloud:9092"],
     "clientId": "superstream-analyzer",
     "vendor": "confluent-cloud",
     "useSasl": true,
@@ -164,7 +164,7 @@ npx superstream-kafka-analyzer --config config.json
 ```json
 {
   "kafka": {
-    "brokers": ["your-aiven-cluster.aivencloud.com:12345"],
+    "bootstrap_servers": ["your-aiven-cluster.aivencloud.com:12345"],
     "clientId": "superstream-analyzer",
     "vendor": "aiven",
     "useSasl": true,
@@ -195,7 +195,7 @@ npx superstream-kafka-analyzer --config config.json
 ```bash
 # Default for local development
 npx superstream-kafka-analyzer
-# Configure brokers as: localhost:9092
+# Configure bootstrap servers as: localhost:9092
 ```
 
 ### SASL Authentication
@@ -442,7 +442,7 @@ The tool includes comprehensive validation that will:
 ### Kafka Configuration
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `brokers` | string | Yes | Comma-separated list of Kafka brokers |
+| `bootstrap_servers` | string | Yes | Comma-separated list of Kafka bootstrap servers |
 | `clientId` | string | Yes | Client identifier for Kafka connection |
 | `useSasl` | boolean | No | Enable SASL authentication |
 | `sasl.mechanism` | string | No* | SASL mechanism (PLAIN, SCRAM-SHA-256, SCRAM-SHA-512) |
