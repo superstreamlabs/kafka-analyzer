@@ -90,34 +90,37 @@ class HealthChecker {
     // Check 4: Internal Topics Health
     await this.checkInternalTopics(topics, results);
 
-    // Check 5: AWS MSK Specific Checks
+    // Check 5: Under-Replicated Partitions
+    await this.checkUnderReplicatedPartitions(topics, results);
+
+    // Check 6: AWS MSK Specific Checks
     await this.checkAwsMskSpecific(topics, results);
 
-    // Check 6: Apache Kafka Specific Checks
+    // Check 7: Apache Kafka Specific Checks
     await this.checkApacheKafkaSpecific(topics, results);
 
-    // Check 7: Rack Awareness
+    // Check 8: Rack Awareness
     await this.checkRackAwareness(clusterInfo, topics, results);
 
-    // Check 8: Replica Distribution
+    // Check 9: Replica Distribution
     await this.checkReplicaDistribution(clusterInfo, topics, results);
 
-    // Check 9: Metrics Configuration
+    // Check 10: Metrics Configuration
     await this.checkMetricsEnabled(clusterInfo, topics, results);
 
-    // Check 10: Logging Configuration
+    // Check 11: Logging Configuration
     await this.checkLoggingConfiguration(clusterInfo, topics, results);
 
-    // Check 11: Authentication Configuration
+    // Check 12: Authentication Configuration
     await this.checkAuthenticationConfiguration(clusterInfo, topics, results);
 
-    // Check 12: Quotas Configuration
+    // Check 13: Quotas Configuration
     await this.checkQuotasConfiguration(clusterInfo, topics, results);
 
-    // Check 13: Payload Compression
+    // Check 14: Payload Compression
     await this.checkPayloadCompression(clusterInfo, topics, results);
 
-    // Check 14: Infinite Retention Policy
+    // Check 15: Infinite Retention Policy
     await this.checkInfiniteRetentionPolicy(clusterInfo, topics, results);
   }
 
@@ -135,29 +138,32 @@ class HealthChecker {
 
     // Check 4: Internal Topics Health
     await this.checkInternalTopics(topics, results);
+
+    // Check 5: Under-Replicated Partitions
+    await this.checkUnderReplicatedPartitions(topics, results);
     
-    // Check 5: Rack Awareness
+    // Check 6: Rack Awareness
     await this.checkRackAwareness(clusterInfo, topics, results);
     
-    // Check 6: Replica Distribution
+    // Check 7: Replica Distribution
     await this.checkReplicaDistribution(clusterInfo, topics, results);
     
-    // Check 7: Metrics Configuration
+    // Check 8: Metrics Configuration
     await this.checkMetricsEnabled(clusterInfo, topics, results);
     
-    // Check 8: Logging Configuration
+    // Check 9: Logging Configuration
     await this.checkLoggingConfiguration(clusterInfo, topics, results);
     
-    // Check 9: Authentication Configuration
+    // Check 10: Authentication Configuration
     await this.checkAuthenticationConfiguration(clusterInfo, topics, results);
     
-    // Check 10: Quotas Configuration
+    // Check 11: Quotas Configuration
     await this.checkQuotasConfiguration(clusterInfo, topics, results);
     
-    // Check 11: Payload Compression
+    // Check 12: Payload Compression
     await this.checkPayloadCompression(clusterInfo, topics, results);
     
-    // Check 12: Infinite Retention Policy
+    // Check 13: Infinite Retention Policy
     await this.checkInfiniteRetentionPolicy(clusterInfo, topics, results);
     
     // TODO: Implement other Confluent Cloud specific checks
@@ -178,29 +184,32 @@ class HealthChecker {
 
     // Check 4: Internal Topics Health
     await this.checkInternalTopics(topics, results);
+
+    // Check 5: Under-Replicated Partitions
+    await this.checkUnderReplicatedPartitions(topics, results);
     
-    // Check 5: Rack Awareness
+    // Check 6: Rack Awareness
     await this.checkRackAwareness(clusterInfo, topics, results);
     
-    // Check 6: Replica Distribution
+    // Check 7: Replica Distribution
     await this.checkReplicaDistribution(clusterInfo, topics, results);
     
-    // Check 7: Metrics Configuration
+    // Check 8: Metrics Configuration
     await this.checkMetricsEnabled(clusterInfo, topics, results);
     
-    // Check 8: Logging Configuration
+    // Check 9: Logging Configuration
     await this.checkLoggingConfiguration(clusterInfo, topics, results);
     
-    // Check 9: Authentication Configuration
+    // Check 10: Authentication Configuration
     await this.checkAuthenticationConfiguration(clusterInfo, topics, results);
     
-    // Check 10: Quotas Configuration
+    // Check 11: Quotas Configuration
     await this.checkQuotasConfiguration(clusterInfo, topics, results);
     
-    // Check 11: Payload Compression
+    // Check 12: Payload Compression
     await this.checkPayloadCompression(clusterInfo, topics, results);
     
-    // Check 12: Infinite Retention Policy
+    // Check 13: Infinite Retention Policy
     await this.checkInfiniteRetentionPolicy(clusterInfo, topics, results);
     
     // TODO: Implement other Aiven specific checks
@@ -222,28 +231,31 @@ class HealthChecker {
     // Check 4: Internal Topics Health
     await this.checkInternalTopics(topics, results);
 
-    // Check 5: Rack Awareness
+    // Check 5: Under-Replicated Partitions
+    await this.checkUnderReplicatedPartitions(topics, results);
+
+    // Check 6: Rack Awareness
     await this.checkRackAwareness(clusterInfo, topics, results);
     
-    // Check 6: Replica Distribution
+    // Check 7: Replica Distribution
     await this.checkReplicaDistribution(clusterInfo, topics, results);
     
-    // Check 7: Metrics Configuration
+    // Check 8: Metrics Configuration
     await this.checkMetricsEnabled(clusterInfo, topics, results);
     
-    // Check 8: Logging Configuration
+    // Check 9: Logging Configuration
     await this.checkLoggingConfiguration(clusterInfo, topics, results);
     
-    // Check 9: Authentication Configuration
+    // Check 10: Authentication Configuration
     await this.checkAuthenticationConfiguration(clusterInfo, topics, results);
     
-    // Check 10: Quotas Configuration
+    // Check 11: Quotas Configuration
     await this.checkQuotasConfiguration(clusterInfo, topics, results);
     
-    // Check 11: Payload Compression
+    // Check 12: Payload Compression
     await this.checkPayloadCompression(clusterInfo, topics, results);
     
-    // Check 12: Infinite Retention Policy
+    // Check 13: Infinite Retention Policy
     await this.checkInfiniteRetentionPolicy(clusterInfo, topics, results);
   }
 
@@ -342,6 +354,54 @@ class HealthChecker {
     } else {
       this.addCheck(results, 'internal-topics', checkName, 'error', 
         `${unhealthyInternal.length} internal topic(s) have issues: ${unhealthyInternal.map(t => t.name).join(', ')}`);
+    }
+  }
+
+  async checkUnderReplicatedPartitions(topics, results) {
+    const checkName = 'Under-Replicated Partitions';
+    
+    if (topics.length === 0) {
+      this.addCheck(results, 'under-replicated-partitions', checkName, 'info', 
+        'No topics found to analyze');
+      return;
+    }
+
+    const underReplicatedTopics = [];
+    const underReplicatedPartitions = [];
+
+    topics.forEach(topic => {
+      if (topic.partitionDetails) {
+        topic.partitionDetails.forEach(partition => {
+          const expectedReplicas = topic.replicationFactor;
+          const actualReplicas = partition.isr ? partition.isr.length : partition.replicas.length;
+          
+          if (actualReplicas < expectedReplicas) {
+            underReplicatedPartitions.push({
+              topic: topic.name,
+              partition: partition.partition,
+              expected: expectedReplicas,
+              actual: actualReplicas
+            });
+            
+            if (!underReplicatedTopics.includes(topic.name)) {
+              underReplicatedTopics.push(topic.name);
+            }
+          }
+        });
+      }
+    });
+
+    if (underReplicatedPartitions.length === 0) {
+      this.addCheck(results, 'under-replicated-partitions', checkName, 'pass', 
+        `All topics have the expected number of in-sync replicas`);
+    } else {
+      const partitionDetails = underReplicatedPartitions.map(p => 
+        `${p.topic}:${p.partition} (${p.actual}/${p.expected} replicas)`
+      ).join(', ');
+      
+      this.addCheck(results, 'under-replicated-partitions', checkName, 'fail', 
+        `${underReplicatedPartitions.length} partition(s) in ${underReplicatedTopics.length} topic(s) are under-replicated: ${partitionDetails}`,
+        'Check broker health and network connectivity. Under-replicated partitions may indicate broker failures or network issues.');
     }
   }
 
