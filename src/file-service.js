@@ -491,6 +491,11 @@ class FileService {
         <br><small>All rights reserved to Superstream Labs Inc 2025. You own your data and it is never shared with anyone, including us.</small>
         </p>
       </div>
+      <div style="margin-top: 30px; text-align: center;">
+        <a href="https://superstream.ai" target="_blank">
+          <img src="static/Superstream CTA.png" alt="Superstream - Fix your Kafka issues automatically" style="max-width: 100%; height: auto; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" />
+        </a>
+      </div>
     </div>
   </div>
 </body>
