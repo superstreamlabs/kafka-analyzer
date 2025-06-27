@@ -287,7 +287,6 @@ The tool performs comprehensive health checks on your Kafka cluster to identify 
 - **Topic Partition Distribution**: Checks for balanced partition distribution across topics
 - **Consumer Group Health**: Identifies consumer groups with no active members
 - **Internal Topics Health**: Verifies system topics are healthy
-- **Apache Kafka Specific Health**: Checks Apache Kafka system topics (__consumer_offsets, __transaction_state, __kafka_connect)
 - **Rack Awareness**: Checks rack awareness configuration for better availability
 - **Replica Distribution**: Ensures replicas are evenly distributed across brokers
 - **Metrics Configuration**: Verifies JMX metrics configuration

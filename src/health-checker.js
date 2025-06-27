@@ -222,31 +222,28 @@ class HealthChecker {
     // Check 4: Internal Topics Health
     await this.checkInternalTopics(topics, results);
 
-    // Check 5: Apache Kafka Specific Checks
-    await this.checkApacheKafkaSpecific(topics, results);
-
-    // Check 6: Rack Awareness
+    // Check 5: Rack Awareness
     await this.checkRackAwareness(clusterInfo, topics, results);
     
-    // Check 7: Replica Distribution
+    // Check 6: Replica Distribution
     await this.checkReplicaDistribution(clusterInfo, topics, results);
     
-    // Check 8: Metrics Configuration
+    // Check 7: Metrics Configuration
     await this.checkMetricsEnabled(clusterInfo, topics, results);
     
-    // Check 9: Logging Configuration
+    // Check 8: Logging Configuration
     await this.checkLoggingConfiguration(clusterInfo, topics, results);
     
-    // Check 10: Authentication Configuration
+    // Check 9: Authentication Configuration
     await this.checkAuthenticationConfiguration(clusterInfo, topics, results);
     
-    // Check 11: Quotas Configuration
+    // Check 10: Quotas Configuration
     await this.checkQuotasConfiguration(clusterInfo, topics, results);
     
-    // Check 12: Payload Compression
+    // Check 11: Payload Compression
     await this.checkPayloadCompression(clusterInfo, topics, results);
     
-    // Check 13: Infinite Retention Policy
+    // Check 12: Infinite Retention Policy
     await this.checkInfiniteRetentionPolicy(clusterInfo, topics, results);
   }
 
