@@ -252,7 +252,7 @@ function displayHelp() {
   
   console.log(chalk.yellow('Options:'));
   console.log('  -c, --config <path>        Path to configuration file');
-  console.log('  -b, --brokers <brokers>    Comma-separated list of Kafka brokers');
+  console.log('  -b, --bootstrap-servers <servers>    Comma-separated list of Kafka bootstrap servers');
   console.log('  -v, --verbose              Enable verbose logging');
   console.log('  -t, --timeout <seconds>    Connection timeout in seconds (default: 30)');
   console.log('  --no-validation            Skip validation steps');
@@ -261,13 +261,13 @@ function displayHelp() {
   
   console.log(chalk.yellow('Examples:'));
   console.log('  npx superstream-kafka-analyzer');
-  console.log('  npx superstream-kafka-analyzer --brokers localhost:9092');
+  console.log('  npx superstream-kafka-analyzer --bootstrap-servers localhost:9092');
   console.log('  npx superstream-kafka-analyzer --config config.json --verbose\n');
   
   console.log(chalk.yellow('Configuration File Format:'));
   console.log('  {');
   console.log('    "kafka": {');
-  console.log('      "brokers": ["localhost:9092", "localhost:9093"],');
+  console.log('      "bootstrap_servers": ["localhost:9092", "localhost:9093"],');
   console.log('      "security": "PLAINTEXT"');
   console.log('    },');
   console.log('    "file": {');

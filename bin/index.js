@@ -13,7 +13,7 @@ program
   .description('Interactive utility to analyze Kafka clusters health and configuration')
   .version('1.0.0')
   .option('-c, --config <path>', 'Path to configuration file')
-  .option('-b, --brokers <brokers>', 'Comma-separated list of Kafka brokers')
+  .option('-b, --bootstrap-servers <servers>', 'Comma-separated list of Kafka bootstrap servers')
   .option('-v, --verbose', 'Enable verbose logging')
   .option('-t, --timeout <seconds>', 'Connection timeout in seconds', '30')
 

@@ -22,6 +22,11 @@ class CLI {
     this.kafkaClient = null;
     this.fileService = null;
     this.analytics = new SupabaseAnalytics();
+    
+    // Handle bootstrap-servers option mapping to brokers
+    if (options.bootstrapServers && !options.brokers) {
+      this.options.brokers = options.bootstrapServers;
+    }
   }
 
   async loadConfigFromFile(configPath) {
@@ -77,10 +82,10 @@ class CLI {
       {
         type: 'input',
         name: 'brokers',
-        message: 'Kafka brokers (comma-separated):',
+        message: 'Bootstrap servers (comma-separated):',
         default: 'localhost:9092',
         validate: (input) => {
-          if (!input.trim()) return 'Brokers are required';
+          if (!input.trim()) return 'Bootstrap servers are required';
           return true;
         }
       },
