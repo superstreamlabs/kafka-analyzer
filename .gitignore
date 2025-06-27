@@ -217,3 +217,5 @@ config.production.json
 # Local development files
 .local
 .local.* 
+.cursor
+.cursor/*
