@@ -93,34 +93,37 @@ class HealthChecker {
     // Check 5: Under-Replicated Partitions
     await this.checkUnderReplicatedPartitions(topics, results);
 
-    // Check 6: AWS MSK Specific Checks
+    // Check 6: Min In-Sync Replicas Configuration
+    await this.checkMinInsyncReplicas(topics, results);
+
+    // Check 7: AWS MSK Specific Checks
     await this.checkAwsMskSpecific(topics, results);
 
-    // Check 7: Apache Kafka Specific Checks
+    // Check 8: Apache Kafka Specific Checks
     await this.checkApacheKafkaSpecific(topics, results);
 
-    // Check 8: Rack Awareness
+    // Check 9: Rack Awareness
     await this.checkRackAwareness(clusterInfo, topics, results);
 
-    // Check 9: Replica Distribution
+    // Check 10: Replica Distribution
     await this.checkReplicaDistribution(clusterInfo, topics, results);
 
-    // Check 10: Metrics Configuration
+    // Check 11: Metrics Configuration
     await this.checkMetricsEnabled(clusterInfo, topics, results);
 
-    // Check 11: Logging Configuration
+    // Check 12: Logging Configuration
     await this.checkLoggingConfiguration(clusterInfo, topics, results);
 
-    // Check 12: Authentication Configuration
+    // Check 13: Authentication Configuration
     await this.checkAuthenticationConfiguration(clusterInfo, topics, results);
 
-    // Check 13: Quotas Configuration
+    // Check 14: Quotas Configuration
     await this.checkQuotasConfiguration(clusterInfo, topics, results);
 
-    // Check 14: Payload Compression
+    // Check 15: Payload Compression
     await this.checkPayloadCompression(clusterInfo, topics, results);
 
-    // Check 15: Infinite Retention Policy
+    // Check 16: Infinite Retention Policy
     await this.checkInfiniteRetentionPolicy(clusterInfo, topics, results);
   }
 
@@ -187,29 +190,32 @@ class HealthChecker {
 
     // Check 5: Under-Replicated Partitions
     await this.checkUnderReplicatedPartitions(topics, results);
+
+    // Check 6: Min In-Sync Replicas Configuration
+    await this.checkMinInsyncReplicas(topics, results);
     
-    // Check 6: Rack Awareness
+    // Check 7: Rack Awareness
     await this.checkRackAwareness(clusterInfo, topics, results);
     
-    // Check 7: Replica Distribution
+    // Check 8: Replica Distribution
     await this.checkReplicaDistribution(clusterInfo, topics, results);
     
-    // Check 8: Metrics Configuration
+    // Check 9: Metrics Configuration
     await this.checkMetricsEnabled(clusterInfo, topics, results);
     
-    // Check 9: Logging Configuration
+    // Check 10: Logging Configuration
     await this.checkLoggingConfiguration(clusterInfo, topics, results);
     
-    // Check 10: Authentication Configuration
+    // Check 11: Authentication Configuration
     await this.checkAuthenticationConfiguration(clusterInfo, topics, results);
     
-    // Check 11: Quotas Configuration
+    // Check 12: Quotas Configuration
     await this.checkQuotasConfiguration(clusterInfo, topics, results);
     
-    // Check 12: Payload Compression
+    // Check 13: Payload Compression
     await this.checkPayloadCompression(clusterInfo, topics, results);
     
-    // Check 13: Infinite Retention Policy
+    // Check 14: Infinite Retention Policy
     await this.checkInfiniteRetentionPolicy(clusterInfo, topics, results);
     
     // TODO: Implement other Aiven specific checks
@@ -234,28 +240,31 @@ class HealthChecker {
     // Check 5: Under-Replicated Partitions
     await this.checkUnderReplicatedPartitions(topics, results);
 
-    // Check 6: Rack Awareness
+    // Check 6: Min In-Sync Replicas Configuration
+    await this.checkMinInsyncReplicas(topics, results);
+
+    // Check 7: Rack Awareness
     await this.checkRackAwareness(clusterInfo, topics, results);
     
-    // Check 7: Replica Distribution
+    // Check 8: Replica Distribution
     await this.checkReplicaDistribution(clusterInfo, topics, results);
     
-    // Check 8: Metrics Configuration
+    // Check 9: Metrics Configuration
     await this.checkMetricsEnabled(clusterInfo, topics, results);
     
-    // Check 9: Logging Configuration
+    // Check 10: Logging Configuration
     await this.checkLoggingConfiguration(clusterInfo, topics, results);
     
-    // Check 10: Authentication Configuration
+    // Check 11: Authentication Configuration
     await this.checkAuthenticationConfiguration(clusterInfo, topics, results);
     
-    // Check 11: Quotas Configuration
+    // Check 12: Quotas Configuration
     await this.checkQuotasConfiguration(clusterInfo, topics, results);
     
-    // Check 12: Payload Compression
+    // Check 13: Payload Compression
     await this.checkPayloadCompression(clusterInfo, topics, results);
     
-    // Check 13: Infinite Retention Policy
+    // Check 14: Infinite Retention Policy
     await this.checkInfiniteRetentionPolicy(clusterInfo, topics, results);
   }
 
@@ -402,6 +411,43 @@ class HealthChecker {
       this.addCheck(results, 'under-replicated-partitions', checkName, 'fail', 
         `${underReplicatedPartitions.length} partition(s) in ${underReplicatedTopics.length} topic(s) are under-replicated: ${partitionDetails}`,
         'Check broker health and network connectivity. Under-replicated partitions may indicate broker failures or network issues.');
+    }
+  }
+
+  async checkMinInsyncReplicas(topics, results) {
+    const checkName = 'Min In-Sync Replicas Configuration';
+    
+    if (topics.length === 0) {
+      this.addCheck(results, 'min-insync-replicas', checkName, 'info', 
+        'No topics found to analyze');
+      return;
+    }
+
+    const problematicTopics = [];
+
+    topics.forEach(topic => {
+      // Check if topic has min.insync.replicas configuration
+      if (topic.config && topic.config['min.insync.replicas']) {
+        const minInsyncReplicas = parseInt(topic.config['min.insync.replicas']);
+        const replicationFactor = topic.replicationFactor;
+        
+        if (minInsyncReplicas > replicationFactor) {
+          problematicTopics.push({
+            name: topic.name,
+            minInsyncReplicas: minInsyncReplicas,
+            replicationFactor: replicationFactor
+          });
+        }
+      }
+    });
+
+    if (problematicTopics.length === 0) {
+      this.addCheck(results, 'min-insync-replicas', checkName, 'pass', 
+        `All topics have appropriate min.insync.replicas configuration`);
+    } else {
+      this.addCheck(results, 'min-insync-replicas', checkName, 'fail', 
+        `Found ${problematicTopics.length} topic(s) with min.insync.replicas greater than replication factor`,
+        'Sign up to Superstream to view the exact topics and fix this critical configuration issue. Topics with min.insync.replicas > replication factor will never be able to accept writes.');
     }
   }
 
@@ -763,7 +809,7 @@ class HealthChecker {
       }
       
       if (brokerLogs.Firehose && brokerLogs.Firehose.Enabled) {
-        enabledLogTypes.push('Kinesis Firehose');
+        enabledLogs.push('Kinesis Firehose');
       }
       
       if (brokerLogs.S3 && brokerLogs.S3.Enabled) {

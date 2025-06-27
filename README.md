@@ -245,6 +245,7 @@ The tool performs comprehensive health checks on your Kafka cluster to identify 
 - **Consumer Group Health**: Identifies consumer groups with no active members
 - **Internal Topics Health**: Verifies system topics are healthy
 - **Under-Replicated Partitions**: Checks if topics have fewer in-sync replicas than configured
+- **Min In-Sync Replicas Configuration**: Checks if topics have min.insync.replicas > replication factor
 - **AWS MSK Specific Health**: Checks MSK system topics (__amazon_msk_*, __consumer_offsets)
 - **Rack Awareness**: Verifies rack awareness configuration for better availability
 - **Replica Distribution**: Ensures replicas are evenly distributed across brokers
@@ -276,6 +277,7 @@ The tool performs comprehensive health checks on your Kafka cluster to identify 
 - **Consumer Group Health**: Identifies consumer groups with no active members
 - **Internal Topics Health**: Verifies system topics are healthy
 - **Under-Replicated Partitions**: Checks if topics have fewer in-sync replicas than configured
+- **Min In-Sync Replicas Configuration**: Checks if topics have min.insync.replicas > replication factor
 - **Rack Awareness**: Checks rack awareness configuration for better availability
 - **Replica Distribution**: Ensures replicas are evenly distributed across brokers
 - **Metrics Configuration**: Verifies metrics accessibility
@@ -291,6 +293,7 @@ The tool performs comprehensive health checks on your Kafka cluster to identify 
 - **Consumer Group Health**: Identifies consumer groups with no active members
 - **Internal Topics Health**: Verifies system topics are healthy
 - **Under-Replicated Partitions**: Checks if topics have fewer in-sync replicas than configured
+- **Min In-Sync Replicas Configuration**: Checks if topics have min.insync.replicas > replication factor
 - **Rack Awareness**: Checks rack awareness configuration for better availability
 - **Replica Distribution**: Ensures replicas are evenly distributed across brokers
 - **Metrics Configuration**: Verifies JMX metrics configuration
@@ -521,6 +524,7 @@ SuperStream Kafka Analyzer performs a comprehensive set of health checks on your
 - **Consumer Group Health:** Identifies consumer groups with no active members.
 - **Internal Topics Health:** Verifies system topics are healthy.
 - **Under-Replicated Partitions:** Checks if topics have fewer in-sync replicas than configured.
+- **Min In-Sync Replicas Configuration:** Checks if topics have min.insync.replicas greater than replication factor.
 - **Vendor-Specific Checks:** For AWS MSK, Confluent, Aiven, and Apache Kafka, checks for system topics and platform-specific best practices.
 - **Rack Awareness:** Verifies rack awareness configuration for better availability.
 - **Replica Distribution:** Ensures replicas are evenly distributed across brokers.
