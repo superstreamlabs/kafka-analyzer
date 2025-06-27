@@ -200,6 +200,9 @@ out/
 # Configuration files with sensitive data
 config.local.json
 config.production.json
+config.apache-kafka-no-auth.json
+config.aws-msk-iam.json
+test-config-confluent.json
 *.key
 *.pem
 *.crt
