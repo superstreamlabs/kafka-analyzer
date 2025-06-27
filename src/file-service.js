@@ -465,7 +465,7 @@ class FileService {
 <body>
   <div class="report-card">
     <div class="sidebar">
-      <img src="kafka-analysis/superstream-logo.png" alt="Superstream Logo" />
+      <img src="static/superstream-logo.png" alt="Superstream Logo" />
       <div>
         <div class="summary-list">
           <p><strong>Vendor:</strong> ${this.formatVendorName(vendor)}</p>
