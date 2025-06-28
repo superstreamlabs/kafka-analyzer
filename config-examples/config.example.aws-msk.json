@@ -1,17 +1,17 @@
 {
   "kafka": {
-    "brokers": ["b-1.your-cluster.abc123.c2.kafka.us-east-1.amazonaws.com:9092", "b-2.your-cluster.abc123.c2.kafka.us-east-1.amazonaws.com:9092"],
+    "brokers": ["b-1.your-cluster.abc123.c2.kafka.us-east-1.amazonaws.com:9198"],
     "clientId": "superstream-analyzer",
+    "vendor": "aws-msk",
     "useSasl": true,
     "sasl": {
-      "mechanism": "SCRAM-SHA-512",
-      "username": "your-msk-username",
-      "password": "your-msk-password"
+      "mechanism": "oauthbearer"
     }
   },
   "file": {
     "outputDir": "./kafka-analysis",
     "formats": ["json", "csv", "html", "txt"],
     "includeMetadata": true
-  }
+  },
+  "email": "user@example.com"
 } 

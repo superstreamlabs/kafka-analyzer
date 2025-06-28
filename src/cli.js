@@ -45,6 +45,12 @@ class CLI {
       }
 
       this.config = config;
+      
+      // Add email if not present in config file
+      if (!this.config.email) {
+        this.config.email = '';
+      }
+      
       console.log(chalk.green(`✅ Configuration loaded from: ${fullPath}`));
       return true;
     } catch (error) {
@@ -56,6 +62,25 @@ class CLI {
   async promptForConfig() {
     console.log(chalk.blue('\n🚀 Superstream Kafka Analyzer\n'));
     console.log(chalk.gray('Configure your analysis settings:\n'));
+
+    // Email Collection
+    console.log(chalk.yellow('📧 Email Collection'));
+    console.log(chalk.gray('We collect your email to generate a comprehensive report file. You can skip this, but no file-based output will be generated.\n'));
+    
+    const emailAnswer = await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'email',
+        message: 'Your email address (optional - skip for no file output):',
+        default: '',
+        validate: (input) => {
+          if (input.trim() === '') return true; // Allow empty
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(input)) return 'Please enter a valid email address';
+          return true;
+        }
+      }
+    ]);
 
     // Vendor Selection
     console.log(chalk.yellow('🏢 Vendor Selection'));
@@ -259,6 +284,9 @@ class CLI {
       useSasl: !!saslConfig,
       sasl: saslConfig
     };
+
+    // Add email to config
+    this.config.email = emailAnswer.email;
 
     // File Output Configuration
     console.log(chalk.yellow('\n💾 File Output Configuration'));
@@ -472,38 +500,72 @@ class CLI {
         analysisResults.healthChecks = healthResults;
       }
       
-      spinner.text = 'Saving results to files...';
-      spinner.render();
+      // Check if email is provided for file generation
+      if (this.config.email && this.config.email.trim()) {
+        // Store email in Supabase
+        await this.analytics.storeEmail(
+          this.config.email,
+          this.config.kafka.vendor,
+          !!this.options.config
+        );
+        
+        spinner.text = 'Saving results to files...';
+        spinner.render();
 
-      // Save results to files
-      const savedFiles = await this.fileService.saveAnalysisResults(analysisResults);
+        // Save results to files
+        const savedFiles = await this.fileService.saveAnalysisResults(analysisResults);
 
-      spinner.stop();
-      
-      // Display summary
-      console.log(chalk.green('\n✅ Analysis completed successfully!'));
-      console.log(chalk.blue('\n📊 Analysis Summary:'));
-      console.log(chalk.gray(`• Total Topics: ${analysisResults.summary.totalTopics}`));
-      console.log(chalk.gray(`• Total Partitions: ${analysisResults.summary.totalPartitions}`));
-      console.log(chalk.gray(`• User Topics: ${analysisResults.summary.userTopics}`));
-      console.log(chalk.gray(`• Internal Topics: ${analysisResults.summary.internalTopics}`));
-      console.log(chalk.gray(`• Topics with Issues: ${analysisResults.summary.topicsWithErrors}`));
-      console.log(chalk.gray(`• Consumer Groups: ${analysisResults.summary.consumerGroups}`));
-      
-      // Show topics with issues if any (only partitions missing or zero)
-      const topicsWithIssues = topics.filter(topic => !topic.partitions || topic.partitions === 0);
-      if (topicsWithIssues.length > 0) {
-        console.log(chalk.yellow('\n⚠️  Topics with Issues (missing or zero partitions):'));
-        topicsWithIssues.forEach(topic => {
-          console.log(chalk.yellow(`  • ${topic.name}: ${topic.partitions || 0} partitions`));
-        });
-      }
-      
-      if (savedFiles && savedFiles.length > 0) {
-        console.log(chalk.green('\n💾 Results saved to:'));
-        savedFiles.forEach(file => {
-          console.log(chalk.gray(`  • ${file}`));
-        });
+        spinner.stop();
+        
+        // Display summary
+        console.log(chalk.green('\n✅ Analysis completed successfully!'));
+        console.log(chalk.blue('\n📊 Analysis Summary:'));
+        console.log(chalk.gray(`• Total Topics: ${analysisResults.summary.totalTopics}`));
+        console.log(chalk.gray(`• Total Partitions: ${analysisResults.summary.totalPartitions}`));
+        console.log(chalk.gray(`• User Topics: ${analysisResults.summary.userTopics}`));
+        console.log(chalk.gray(`• Internal Topics: ${analysisResults.summary.internalTopics}`));
+        console.log(chalk.gray(`• Topics with Issues: ${analysisResults.summary.topicsWithErrors}`));
+        console.log(chalk.gray(`• Consumer Groups: ${analysisResults.summary.consumerGroups}`));
+        
+        // Show topics with issues if any (only partitions missing or zero)
+        const topicsWithIssues = topics.filter(topic => !topic.partitions || topic.partitions === 0);
+        if (topicsWithIssues.length > 0) {
+          console.log(chalk.yellow('\n⚠️  Topics with Issues (missing or zero partitions):'));
+          topicsWithIssues.forEach(topic => {
+            console.log(chalk.yellow(`  • ${topic.name}: ${topic.partitions || 0} partitions`));
+          });
+        }
+        
+        if (savedFiles && savedFiles.length > 0) {
+          console.log(chalk.green('\n💾 Results saved to:'));
+          savedFiles.forEach(file => {
+            console.log(chalk.gray(`  • ${file}`));
+          });
+        }
+      } else {
+        spinner.stop();
+        
+        // Display summary without file generation
+        console.log(chalk.green('\n✅ Analysis completed successfully!'));
+        console.log(chalk.blue('\n📊 Analysis Summary:'));
+        console.log(chalk.gray(`• Total Topics: ${analysisResults.summary.totalTopics}`));
+        console.log(chalk.gray(`• Total Partitions: ${analysisResults.summary.totalPartitions}`));
+        console.log(chalk.gray(`• User Topics: ${analysisResults.summary.userTopics}`));
+        console.log(chalk.gray(`• Internal Topics: ${analysisResults.summary.internalTopics}`));
+        console.log(chalk.gray(`• Topics with Issues: ${analysisResults.summary.topicsWithErrors}`));
+        console.log(chalk.gray(`• Consumer Groups: ${analysisResults.summary.consumerGroups}`));
+        
+        // Show topics with issues if any (only partitions missing or zero)
+        const topicsWithIssues = topics.filter(topic => !topic.partitions || topic.partitions === 0);
+        if (topicsWithIssues.length > 0) {
+          console.log(chalk.yellow('\n⚠️  Topics with Issues (missing or zero partitions):'));
+          topicsWithIssues.forEach(topic => {
+            console.log(chalk.yellow(`  • ${topic.name}: ${topic.partitions || 0} partitions`));
+          });
+        }
+        
+        console.log(chalk.yellow('\n📧 No file-based summary generated because no email was provided.'));
+        console.log(chalk.gray('To generate a comprehensive report file, please provide your email address.'));
       }
 
       // Track successful analysis with location

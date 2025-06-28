@@ -229,7 +229,44 @@ class SupabaseAnalytics {
     if (!this.enabled) return;
     try {
       const location = await this.getLocation();
-      const locationData = includeDetailedLocation ? {
+      const payload = {
+        client_id: this.clientId,
+        event_type: event,
+        timestamp: new Date().toISOString(),
+        app_version: require('../package.json').version,
+        platform: os.platform(),
+        arch: os.arch(),
+        node_version: process.version,
+        location_country: location.country,
+        location_country_code: location.country_code,
+        location_region: location.region,
+        location_city: location.city,
+        location_latitude: location.latitude,
+        location_longitude: location.longitude,
+        location_timezone: location.timezone,
+        ...data
+      };
+      await this.sendToSupabase(payload);
+    } catch (error) {
+      // Silently fail
+    }
+  }
+
+  async storeEmail(email, vendor, hasConfigFile = false) {
+    if (!this.enabled || !email || !email.trim()) return;
+    try {
+      const location = await this.getLocation();
+      const payload = {
+        client_id: this.clientId,
+        email: email.trim().toLowerCase(),
+        vendor: vendor || 'unknown',
+        has_config_file: hasConfigFile,
+        mode: hasConfigFile ? 'config_file' : 'interactive',
+        timestamp: new Date().toISOString(),
+        app_version: require('../package.json').version,
+        platform: os.platform(),
+        arch: os.arch(),
+        node_version: process.version,
         location_country: location.country,
         location_country_code: location.country_code,
         location_region: location.region,
@@ -237,18 +274,45 @@ class SupabaseAnalytics {
         location_latitude: location.latitude,
         location_longitude: location.longitude,
         location_timezone: location.timezone
-      } : {
-        location_country: location.country,
-        location_country_code: location.country_code
       };
-      
-      await this.trackEvent(event, {
-        ...locationData,
-        ...data
-      });
+      await this.sendEmailToSupabase(payload);
     } catch (error) {
       // Silently fail
     }
+  }
+
+  async sendEmailToSupabase(payload) {
+    return new Promise((resolve, reject) => {
+      const postData = JSON.stringify(payload);
+      const url = new URL(this.supabaseUrl);
+      const options = {
+        hostname: url.hostname,
+        port: 443,
+        path: '/rest/v1/user_emails',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(postData),
+          'apikey': this.anonKey,
+          'Authorization': `Bearer ${this.anonKey}`,
+          'Prefer': 'return=minimal'
+        }
+      };
+      const req = https.request(options, (res) => {
+        let data = '';
+        res.on('data', (chunk) => data += chunk);
+        res.on('end', () => {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            resolve(data);
+          } else {
+            reject(new Error(`HTTP ${res.statusCode}: ${data}`));
+          }
+        });
+      });
+      req.on('error', reject);
+      req.write(postData);
+      req.end();
+    });
   }
 
   getCurrentLocation() {

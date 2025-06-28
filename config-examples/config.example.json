@@ -8,5 +8,6 @@
     "outputDir": "./kafka-analysis",
     "formats": ["json", "csv", "html", "txt"],
     "includeMetadata": true
-  }
+  },
+  "email": "user@example.com"
 } 

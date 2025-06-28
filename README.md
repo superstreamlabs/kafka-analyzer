@@ -66,7 +66,8 @@ npx superstream-kafka-analyzer --config config.json
     "formats": ["html"],
     "includeMetadata": true,
     "includeTimestamp": true
-  }
+  },
+  "email": "user@example.com"
 }
 ```
 
@@ -89,7 +90,8 @@ npx superstream-kafka-analyzer --config config.json
     "formats": ["html"],
     "includeMetadata": true,
     "includeTimestamp": true
-  }
+  },
+  "email": "user@example.com"
 }
 ```
 
@@ -112,7 +114,8 @@ npx superstream-kafka-analyzer --config config.json
     "formats": ["html"],
     "includeMetadata": true,
     "includeTimestamp": true
-  }
+  },
+  "email": "user@example.com"
 }
 ```
 
@@ -133,7 +136,8 @@ npx superstream-kafka-analyzer --config config.json
     "formats": ["html"],
     "includeMetadata": true,
     "includeTimestamp": true
-  }
+  },
+  "email": "user@example.com"
 }
 ```
 
@@ -156,7 +160,8 @@ npx superstream-kafka-analyzer --config config.json
     "formats": ["html"],
     "includeMetadata": true,
     "includeTimestamp": true
-  }
+  },
+  "email": "user@example.com"
 }
 ```
 
@@ -179,9 +184,19 @@ npx superstream-kafka-analyzer --config config.json
     "formats": ["html"],
     "includeMetadata": true,
     "includeTimestamp": true
-  }
+  },
+  "email": "user@example.com"
 }
 ```
+
+### Email Collection
+
+The tool collects your email address to generate comprehensive report files. This is optional:
+
+- **Interactive Mode**: You'll be prompted for your email address
+- **Config File Mode**: Add an `"email"` field to your configuration file
+- **Skip Email**: If no email is provided, the analysis will run but no file-based output will be generated
+- **Privacy**: Emails are stored securely in Supabase for report generation purposes only
 
 ## 🔧 Command Line Options
 
