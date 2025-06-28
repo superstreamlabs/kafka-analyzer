@@ -762,8 +762,8 @@ class HealthChecker {
     const checkName = 'AWS MSK Logging Configuration';
     
     try {
-      // Use AWS SDK to check LoggingInfo configuration
-      const AWS = require('aws-sdk');
+      // Use AWS SDK v3 to check LoggingInfo configuration
+      const { KafkaClient, DescribeClusterCommand } = require('@aws-sdk/client-kafka');
       
       // Extract cluster ARN from broker endpoints or use a fallback
       const clusterArn = this.extractClusterArn(clusterInfo) || process.env.MSK_CLUSTER_ARN;
@@ -778,7 +778,7 @@ class HealthChecker {
       // Initialize MSK client with error handling
       let msk;
       try {
-        msk = new AWS.MSK();
+        msk = new KafkaClient();
       } catch (error) {
         this.addCheck(results, 'logging-configuration', checkName, 'warning', 
           'Unable to initialize AWS MSK client',
@@ -787,9 +787,10 @@ class HealthChecker {
       }
       
       // Get cluster details including LoggingInfo
-      const clusterDetails = await msk.describeCluster({
+      const command = new DescribeClusterCommand({
         ClusterArn: clusterArn
-      }).promise();
+      });
+      const clusterDetails = await msk.send(command);
       
       const loggingInfo = clusterDetails.ClusterInfo.LoggingInfo;
       
@@ -809,11 +810,11 @@ class HealthChecker {
       }
       
       if (brokerLogs.Firehose && brokerLogs.Firehose.Enabled) {
-        enabledLogs.push('Kinesis Firehose');
+        enabledLogTypes.push('Kinesis Firehose');
       }
       
       if (brokerLogs.S3 && brokerLogs.S3.Enabled) {
-        enabledLogs.push('S3');
+        enabledLogTypes.push('S3');
       }
       
       if (enabledLogTypes.length === 0) {
@@ -829,15 +830,15 @@ class HealthChecker {
     } catch (error) {
       console.log(chalk.gray(`Debug: AWS SDK error: ${error.message}`));
       
-      if (error.code === 'AccessDenied' || error.code === 'UnauthorizedOperation') {
+      if (error.name === 'AccessDenied' || error.name === 'UnauthorizedOperation') {
         this.addCheck(results, 'logging-configuration', checkName, 'warning', 
           'Insufficient permissions to check logging configuration',
           'Ensure IAM permissions include msk:DescribeCluster or check logging manually in AWS Console');
-      } else if (error.code === 'ResourceNotFoundException') {
+      } else if (error.name === 'ResourceNotFoundException') {
         this.addCheck(results, 'logging-configuration', checkName, 'warning', 
           'Cluster not found or ARN is incorrect',
           'Verify the cluster ARN and ensure it exists in the current AWS region');
-      } else if (error.code === 'InvalidParameterValue') {
+      } else if (error.name === 'InvalidParameterValue') {
         this.addCheck(results, 'logging-configuration', checkName, 'warning', 
           'Invalid cluster ARN format',
           'Set MSK_CLUSTER_ARN environment variable with the correct cluster ARN');
@@ -1031,8 +1032,8 @@ class HealthChecker {
     
     try {
       // For AWS MSK, check if quotas are actually configured
-      // Use AWS SDK to check cluster configuration for quota settings
-      const AWS = require('aws-sdk');
+      // Use AWS SDK v3 to check cluster configuration for quota settings
+      const { KafkaClient, DescribeClusterCommand, DescribeConfigurationCommand } = require('@aws-sdk/client-kafka');
       
       // Extract cluster ARN from broker endpoints or use a fallback
       const clusterArn = this.extractClusterArn(clusterInfo) || process.env.MSK_CLUSTER_ARN;
@@ -1047,7 +1048,7 @@ class HealthChecker {
       // Initialize MSK client with error handling
       let msk;
       try {
-        msk = new AWS.MSK();
+        msk = new KafkaClient();
       } catch (error) {
         this.addCheck(results, 'quotas-configuration', checkName, 'warning', 
           'Unable to initialize AWS MSK client for quotas check',
@@ -1056,7 +1057,8 @@ class HealthChecker {
       }
       
       // Get cluster details to check configuration
-      const clusterDetails = await msk.describeCluster({ ClusterArn: clusterArn }).promise();
+      const clusterCommand = new DescribeClusterCommand({ ClusterArn: clusterArn });
+      const clusterDetails = await msk.send(clusterCommand);
       
       if (clusterDetails.Cluster) {
         const cluster = clusterDetails.Cluster;
@@ -1071,9 +1073,10 @@ class HealthChecker {
         if (cluster.ConfigurationInfo && cluster.ConfigurationInfo.Arn) {
           // Check the configuration for quota-related settings
           try {
-            const configDetails = await msk.describeConfiguration({ 
+            const configCommand = new DescribeConfigurationCommand({ 
               Arn: cluster.ConfigurationInfo.Arn 
-            }).promise();
+            });
+            const configDetails = await msk.send(configCommand);
             
             if (configDetails.LatestRevision && configDetails.LatestRevision.Description) {
               const configDesc = configDetails.LatestRevision.Description.toLowerCase();

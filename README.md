@@ -10,6 +10,28 @@ Interactive CLI for analyzing Kafka health and configuration according to best p
 
 Made with ❤️ by the [Superstream](https://superstream.ai) Team
 
+## 📚 Table of Contents
+
+- [Features](#-features)
+- [Prerequisites](#-prerequisites)
+- [Installation](#-installation)
+- [Quick Start](#-quick-start)
+- [Configuration File Examples](#configuration-file-examples)
+- [Email Collection](#email-collection)
+- [Output Formats](#output-formats)
+- [Health Checks](#-health-checks)
+- [Required Permissions](#-required-permissions)
+- [Analytics & Location Tracking](#-analytics--location-tracking)
+- [Validation Process](#-validation-process)
+- [Output Structure](#-output-structure)
+- [Development](#-development)
+- [Testing](#-testing)
+- [Configuration Reference](#-configuration-reference)
+- [Troubleshooting](#-troubleshooting)
+- [License](#-license)
+- [Contributing](#-contributing)
+- [Support](#-support)
+
 ## 🚀 Features
 
 - **Interactive CLI Interface** - User-friendly prompts for configuration
@@ -196,7 +218,7 @@ The tool collects your email address to generate comprehensive report files. Thi
 - **Interactive Mode**: You'll be prompted for your email address
 - **Config File Mode**: Add an `"email"` field to your configuration file
 - **Skip Email**: If no email is provided, the analysis will run but no file-based output will be generated
-- **Privacy**: Emails are stored securely in Supabase for report generation purposes only
+- **Privacy**: Your email is used only for report generation and is stored securely
 
 ## 🔧 Command Line Options
 
@@ -558,4 +580,46 @@ Each check provides a clear status (✅ Pass, ⚠️ Warning, ❌ Failed, ℹ️
 - **Local-Only:** The tool does not transmit, store, or share your Kafka messages, topic data, or configuration outside your environment.
 - **Optional Analytics:** Anonymous usage analytics (such as error events and feature usage) are sent only if enabled, and never include sensitive Kafka data. You can disable analytics by setting `SUPERSTREAM_ANALYTICS=false`.
 
-Your security and privacy are our top priority. Everything runs locally and securely by default. 
+Your security and privacy are our top priority. Everything runs locally and securely by default.
+
+## 🔑 Required Permissions
+
+To perform all health checks, your user/service account must have the following permissions for each vendor:
+
+### AWS MSK
+- **AWS IAM Permissions:**
+  - `kafka:DescribeCluster`
+  - `kafka:DescribeConfiguration`
+  - `kafka:ListClusters`
+  - `kafka:ListNodes`
+  - (Optional for advanced checks) `kafka:ListConfigurations`, `kafka:ListKafkaVersions`
+- **Kafka Permissions:**
+  - `Describe` and `List` on all topics and consumer groups
+  - `DescribeConfigs` on brokers and topics
+  - `Read`/`Consume` on topics (required for consumer group health and producer compression checks)
+
+### Confluent Cloud
+- **API Key/Secret Permissions:**
+  - `CloudClusterAdmin` or equivalent role
+  - `Describe` and `List` on all topics and consumer groups
+  - `DescribeConfigs` on brokers and topics
+  - `Read`/`Consume` on topics (required for consumer group health and producer compression checks)
+
+### Aiven Kafka
+- **Service Account/User Permissions:**
+  - `Describe` and `List` on all topics and consumer groups
+  - `DescribeConfigs` on brokers and topics
+  - `Read`/`Consume` on topics (required for consumer group health and producer compression checks)
+
+### Apache Kafka / Confluent Platform / Redpanda
+- **Kafka User Permissions:**
+  - `Describe` and `List` on all topics and consumer groups
+  - `DescribeConfigs` on brokers and topics
+  - `Read`/`Consume` on topics (required for consumer group health and producer compression checks)
+
+> **Note:**
+> - Some checks (like logging, quotas, and metrics) require admin-level access to the Kafka Admin API or cloud provider API.
+> - For AWS MSK, you must also have valid AWS credentials configured in your environment.
+> - If you only have limited permissions, some health checks may be skipped or show warnings.
+
+--- 
