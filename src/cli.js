@@ -63,25 +63,6 @@ class CLI {
     console.log(chalk.blue('\n🚀 Superstream Kafka Analyzer\n'));
     console.log(chalk.gray('Configure your analysis settings:\n'));
 
-    // Email Collection
-    console.log(chalk.yellow('📧 Email Collection'));
-    console.log(chalk.gray('We collect your email to generate a comprehensive report file. You can skip this, but no file-based output will be generated.\n'));
-    
-    const emailAnswer = await inquirer.prompt([
-      {
-        type: 'input',
-        name: 'email',
-        message: 'Your email address (optional - skip for no file output):',
-        default: '',
-        validate: (input) => {
-          if (input.trim() === '') return true; // Allow empty
-          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-          if (!emailRegex.test(input)) return 'Please enter a valid email address';
-          return true;
-        }
-      }
-    ]);
-
     // Vendor Selection
     console.log(chalk.yellow('🏢 Vendor Selection'));
     const vendorAnswer = await inquirer.prompt([
@@ -285,9 +266,6 @@ class CLI {
       sasl: saslConfig
     };
 
-    // Add email to config
-    this.config.email = emailAnswer.email;
-
     // File Output Configuration
     console.log(chalk.yellow('\n💾 File Output Configuration'));
     const fileAnswers = await inquirer.prompt([
@@ -319,6 +297,28 @@ class CLI {
       ...fileAnswers,
       formats: ['html']
     };
+
+    // Email Collection - moved to the end
+    console.log(chalk.yellow('\n📧 Do you want to export the results as a file?'));
+    console.log(chalk.gray('We collect your email to generate a comprehensive report file. You can skip this, but no file-based output will be generated.\n'));
+    
+    const emailAnswer = await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'email',
+        message: 'Your email address (optional - skip for no file output):',
+        default: '',
+        validate: (input) => {
+          if (input.trim() === '') return true; // Allow empty
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(input)) return 'Please enter a valid email address';
+          return true;
+        }
+      }
+    ]);
+
+    // Add email to config
+    this.config.email = emailAnswer.email;
   }
 
   async run() {
