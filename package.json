@@ -34,7 +34,8 @@
     "inquirer": "^8.2.4",
     "joi": "^17.11.0",
     "kafkajs": "^2.2.4",
-    "ora": "^5.4.1"
+    "ora": "^5.4.1",
+    "simple-oauth2": "^5.1.0"
   },
   "devDependencies": {
     "eslint": "^8.55.0",
