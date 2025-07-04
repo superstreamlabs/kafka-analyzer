@@ -15,5 +15,6 @@
     "formats": ["json", "csv", "html", "txt"],
     "includeMetadata": true,
     "includeTimestamp": true
-  }
+  },
+  "email": "user@example.com"
 } 
