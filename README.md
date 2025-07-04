@@ -279,14 +279,20 @@ The tool generates comprehensive reports including:
 #### JSON Format
 Complete structured data including all cluster and topic information.
 
+📄 **[View Example JSON Report](report-examples/kafka-report.json)**
+
 #### CSV Format
 Tabular data for easy analysis in spreadsheet applications.
 
 #### HTML Format
 Beautiful formatted report with responsive design and styling.
 
+📄 **[View Example HTML Report](report-examples/kafka-report.html)**
+
 #### TXT Format
 Simple text summary for quick review.
+
+📄 **[View Example TXT Report](report-examples/kafka-report.txt)**
 
 ## 🔍 Health Checks
 
