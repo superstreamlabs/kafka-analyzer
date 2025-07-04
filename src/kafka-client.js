@@ -82,7 +82,7 @@ class KafkaClient {
 
           case 'aiven':
             // Aiven uses SASL_SSL with SCRAM-SHA-256
-            kafkaConfig.ssl = true;
+            kafkaConfig.ssl = await this.buildSslConfig();
             kafkaConfig.sasl = {
               mechanism: 'scram-sha-256', // Aiven typically uses SCRAM-SHA-256
               username: this.config.sasl.username,

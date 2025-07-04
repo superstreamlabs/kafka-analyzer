@@ -191,19 +191,22 @@ npx superstream-kafka-analyzer --config config.json
 ```json
 {
   "kafka": {
-    "bootstrap_servers": ["your-aiven-cluster.aivencloud.com:12345"],
+    "brokers": ["kafka-xxxxx-aiven-kafka.aivencloud.com:12345"],
     "clientId": "superstream-analyzer",
     "vendor": "aiven",
     "useSasl": true,
     "sasl": {
       "mechanism": "SCRAM-SHA-256",
-      "username": "your-username",
-      "password": "your-password"
+      "username": "avnadmin",
+      "password": "YOUR_AVNADMIN_PASSWORD"
+    },
+    "ssl": {
+      "ca": "./path/to/ca.pem"
     }
   },
   "file": {
     "outputDir": "./kafka-analysis",
-    "formats": ["html"],
+    "formats": ["json", "csv", "html", "txt"],
     "includeMetadata": true,
     "includeTimestamp": true
   },
