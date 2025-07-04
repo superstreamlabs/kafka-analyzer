@@ -9,5 +9,6 @@
     "formats": ["json", "csv", "html"],
     "includeMetadata": true,
     "includeTimestamp": false
-  }
+  },
+  "email": "user@example.com"
 } 

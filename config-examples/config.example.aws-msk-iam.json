@@ -14,5 +14,6 @@
     "outputDir": "./kafka-analysis",
     "formats": ["json", "csv", "html"],
     "includeMetadata": true
-  }
+  },
+  "email": "user@example.com"
 } 
