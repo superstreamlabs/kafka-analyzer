@@ -565,7 +565,9 @@ class CLI {
         }
         
         console.log(chalk.yellow('\n📧 No file-based summary generated because no email was provided.'));
-        console.log(chalk.gray('To generate a comprehensive report file, please provide your email address.'));
+        console.log(chalk.gray('To generate a comprehensive report file, either:'));
+        console.log(chalk.gray('  • Run in interactive mode (npx .) and provide your email when prompted'));
+        console.log(chalk.gray('  • Add "email": "your@email.com" to your config file (see examples in README)'));
       }
 
       // Track successful analysis with location
