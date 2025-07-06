@@ -196,9 +196,9 @@
       <div>
         <div class="summary-list">
           <p><strong>Vendor:</strong> AWS MSK</p>
-          <p><strong>ZooKeepers:</strong> 1</p>
+          <p><strong>ZooKeepers:</strong> 2</p>
           <p><strong>Brokers:</strong> 2</p>
-          <p><strong>Generated:</strong> 6.7.2025, 10:21:51</p>
+          <p><strong>Generated:</strong> 6/28/2025, 12:33:06 PM</p>
           <p><strong>Total Topics:</strong> 5</p>
           <p><strong>User Topics:</strong> 3</p>
           <p><strong>Internal Topics:</strong> 2</p>
@@ -218,7 +218,7 @@
           Total: 16 | 
           ✅ Passed: 10 | 
           ❌ Failed: 0 | 
-          ⚠️ Warnings: 5
+          ⚠️ Warnings: 6
         </div>
         <div class="health-checks">
     
@@ -391,9 +391,9 @@
           
         </div>
       
-        <div class="health-check-item" style="border-left: 4px solid #17a2b8; padding: 10px; margin: 10px 0; background-color: #f8f9fa;">
+        <div class="health-check-item" style="border-left: 4px solid #ffc107; padding: 10px; margin: 10px 0; background-color: #f8f9fa;">
           <div class="health-check-header" style="font-weight: bold; margin-bottom: 5px;">
-            ℹ️ AWS MSK Logging Configuration
+            ⚠️ AWS MSK Logging Configuration
           </div>
           
             <div class="health-check-description" style="color: #6c757d; font-size: 0.9em; margin-bottom: 5px; font-style: italic;">
@@ -401,11 +401,11 @@
             </div>
           
           <div class="health-check-message" style="margin-bottom: 5px;">
-            Unable to verify AWS MSK logging configuration: User: arn:aws:iam::221323242847:user/yaniv is not authorized to perform: kafka:DescribeCluster on resource: arn:aws:kafka:eu-central-1:123456789012:cluster/superstreamstg/*
+            Unable to initialize AWS MSK client
           </div>
           
             <div class="health-check-recommendation" style="color: #17a2b8; font-style: italic;">
-              💡 Recommendation: Check LoggingInfo settings in AWS Console or use AWS CLI to verify log delivery configuration
+              💡 Recommendation: Ensure AWS SDK is properly installed and AWS credentials are configured
             </div>
           
         </div>
@@ -439,11 +439,11 @@
             </div>
           
           <div class="health-check-message" style="margin-bottom: 5px;">
-            Unable to verify AWS MSK quotas configuration
+            Unable to initialize AWS MSK client for quotas check
           </div>
           
             <div class="health-check-recommendation" style="color: #17a2b8; font-style: italic;">
-              💡 Recommendation: Check quota settings in AWS MSK console and ensure proper quota configuration for resource management
+              💡 Recommendation: Ensure AWS SDK is properly installed and AWS credentials are configured
             </div>
           
         </div>
