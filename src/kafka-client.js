@@ -82,8 +82,8 @@ class KafkaClient {
             break;
 
           case 'aiven':
-            // Only support SASL_SSL at this time
-            kafkaConfig.ssl = true;
+            // Aiven uses SASL_SSL with SCRAM-SHA-256 or OAuth
+            kafkaConfig.ssl = await this.buildSslConfig();
             if (mechanism === 'oauthbearer') {
               kafkaConfig.sasl = {
                 mechanism: 'oauthbearer',

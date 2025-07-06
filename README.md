@@ -74,6 +74,22 @@ npx superstream-kafka-analyzer --config config.json
 
 ### Configuration File Examples
 
+**Available Examples:**
+The full list is under the `./config-examples/` folder:
+- [Basic Configuration](config-examples/config.example.json) - Simple localhost setup
+- [SASL Authentication](config-examples/config.example.sasl.json) - Generic SASL setup
+- [Apache Kafka](config-examples/config.example.apache-kafka.json) - Apache Kafka with SASL
+- [Apache Kafka (Plaintext)](config-examples/config.example.apache-kafka-plaintext.json) - Apache Kafka without authentication
+- [Apache Kafka (SCRAM)](config-examples/config.example.apache-kafka-scram.json) - Apache Kafka with SCRAM authentication
+- [AWS MSK (IAM)](config-examples/config.example.aws-msk-iam.json) - AWS MSK with IAM authentication
+- [AWS MSK (SCRAM)](config-examples/config.example.aws-msk.json) - AWS MSK with SCRAM authentication
+- [Confluent Cloud](config-examples/config.example.confluent-cloud.json) - Confluent Cloud setup
+- [Confluent Platform](config-examples/config.example.confluent-platform.json) - Confluent Platform setup
+- [Aiven Kafka](config-examples/config.example.aiven-kafka.json) - Aiven Kafka setup
+- [Redpanda](config-examples/config.example.redpanda.json) - Redpanda setup
+- [With Timestamp](config-examples/config.example.with-timestamp.json) - Include timestamp in filenames
+- [Without Timestamp](config-examples/config.example.without-timestamp.json) - No timestamp in filenames
+
 **Basic Configuration** (`config.example.json`):
 ```json
 {
@@ -191,19 +207,22 @@ npx superstream-kafka-analyzer --config config.json
 ```json
 {
   "kafka": {
-    "bootstrap_servers": ["your-aiven-cluster.aivencloud.com:12345"],
+    "brokers": ["kafka-xxxxx-aiven-kafka.aivencloud.com:12345"],
     "clientId": "superstream-analyzer",
     "vendor": "aiven",
     "useSasl": true,
     "sasl": {
       "mechanism": "SCRAM-SHA-256",
-      "username": "your-username",
-      "password": "your-password"
+      "username": "avnadmin",
+      "password": "YOUR_AVNADMIN_PASSWORD"
+    },
+    "ssl": {
+      "ca": "./path/to/ca.pem"
     }
   },
   "file": {
     "outputDir": "./kafka-analysis",
-    "formats": ["html"],
+    "formats": ["json", "csv", "html", "txt"],
     "includeMetadata": true,
     "includeTimestamp": true
   },
@@ -288,14 +307,20 @@ The tool generates comprehensive reports including:
 #### JSON Format
 Complete structured data including all cluster and topic information.
 
+📄 **[View Example JSON Report](report-examples/kafka-report.json)**
+
 #### CSV Format
 Tabular data for easy analysis in spreadsheet applications.
 
 #### HTML Format
 Beautiful formatted report with responsive design and styling.
 
+📄 **[View Example HTML Report](report-examples/kafka-report.html)**
+
 #### TXT Format
 Simple text summary for quick review.
+
+📄 **[View Example TXT Report](report-examples/kafka-report.txt)**
 
 ## 🔍 Health Checks
 
@@ -512,6 +537,7 @@ The tool includes comprehensive validation that will:
 |-------|------|----------|-------------|
 | `bootstrap_servers` | string | Yes | Comma-separated list of Kafka bootstrap servers |
 | `clientId` | string | Yes | Client identifier for Kafka connection |
+| `vendor` | string | No | Kafka vendor (aws-msk, confluent-cloud, aiven, etc.) |
 | `useSasl` | boolean | No | Enable SASL authentication |
 | `sasl.mechanism` | string | No* | SASL mechanism (PLAIN, SCRAM-SHA-256, SCRAM-SHA-512) |
 | `sasl.username` | string | No* | SASL username |
@@ -525,6 +551,11 @@ The tool includes comprehensive validation that will:
 | `outputDir` | string | Yes | Directory for output files |
 | `formats` | array | Yes | Array of output formats (json, csv, html, txt) |
 | `includeMetadata` | boolean | No | Include metadata in output files |
+
+### Email Configuration
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `email` | string | No | Email address for generating report files. If not provided, no file output will be generated |
 
 ## 🚨 Troubleshooting
 
