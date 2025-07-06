@@ -1,8 +1,9 @@
-const { Kafka } = require('kafkajs');
+const { Kafka, logLevel } = require('kafkajs');
 const fs = require('fs').promises;
 const chalk = require('chalk');
 const crypto = require('crypto');
 const { generateAuthToken } = require('aws-msk-iam-sasl-signer-js');
+const { ClientCredentials } = require('simple-oauth2');
 
 class KafkaClient {
   constructor(config) {
@@ -81,13 +82,43 @@ class KafkaClient {
             break;
 
           case 'aiven':
-            // Aiven uses SASL_SSL with SCRAM-SHA-256
+            // Aiven uses SASL_SSL with SCRAM-SHA-256 or OAuth
             kafkaConfig.ssl = await this.buildSslConfig();
-            kafkaConfig.sasl = {
-              mechanism: 'scram-sha-256', // Aiven typically uses SCRAM-SHA-256
-              username: this.config.sasl.username,
-              password: this.config.sasl.password
-            };
+            if (mechanism === 'oauthbearer') {
+              kafkaConfig.sasl = {
+                mechanism: 'oauthbearer',
+                oauthBearerProvider: async () => {
+                  const client = new ClientCredentials({
+                    client: {
+                      id: this.config.sasl.clientId,
+                      secret: this.config.sasl.clientSecret
+                    },
+                    auth: {
+                      tokenHost: this.config.sasl.host,
+                      tokenPath: this.config.sasl.path
+                    }
+                  });
+
+                  try {
+                    console.log("Getting access token...");
+                    const accessToken = await client.getToken({});
+
+                    return {
+                      value: accessToken.token.access_token
+                    };
+
+                  } catch (error) {
+                    throw error;
+                  }
+                }
+              };
+            } else {
+              kafkaConfig.sasl = {
+                mechanism: 'scram-sha-256', // Aiven typically uses SCRAM-SHA-256
+                username: this.config.sasl.username,
+                password: this.config.sasl.password
+              };
+            }
             break;
 
           case 'confluent-platform':

@@ -230,6 +230,31 @@ The full list is under the `./config-examples/` folder:
 }
 ```
 
+```json
+{
+  "kafka": {
+    "bootstrap_servers": ["your-aiven-cluster.aivencloud.com:12345"],
+    "clientId": "superstream-analyzer",
+    "vendor": "aiven",
+    "useSasl": true,
+    "sasl": {
+      "mechanism": "oauthbearer",
+      "clientId": "your-client-id",
+      "clientSecret": "your-client-secret",
+      "host": "https://my-oauth-server.com",
+      "path": "/oauth/token",
+    }
+  },
+  "file": {
+    "outputDir": "./kafka-analysis",
+    "formats": ["html"],
+    "includeMetadata": true,
+    "includeTimestamp": true
+  },
+  "email": "user@example.com"
+}
+```
+
 ### Email Collection
 
 The tool collects your email address to generate comprehensive report files. This is optional:
