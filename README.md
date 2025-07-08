@@ -4,7 +4,7 @@
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/Version-1.0.0-orange.svg)](package.json)
 
-![Health Check Screenshot](static/Health-check-screenshot.png)
+![Health Check Results](static/health-check-result.gif)
 
 Interactive CLI for analyzing Kafka health and configuration according to best practices and industry standards.
 
