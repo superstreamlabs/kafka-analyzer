@@ -2,16 +2,26 @@
   "kafka": {
     "brokers": ["kafka1.example.com:9093", "kafka2.example.com:9093"],
     "clientId": "superstream-analyzer",
-    "vendor": "custom-oauth",
+    "vendor": "oidc",
     "useSasl": true,
     "sasl": {
       "mechanism": "oauthbearer",
       "clientId": "your-client-id",
       "clientSecret": "your-client-secret",
+      "_comment1": "Option 1: Use discovery URL (recommended)",
+      "discoveryUrl": "https://auth.example.com/.well-known/openid-configuration",
+      "_comment2": "Option 2: Or manually specify endpoints",
       "tokenHost": "https://auth.example.com",
       "tokenPath": "/oauth/token",
-      "scope": "kafka:read kafka:write",
-      "audience": "https://kafka.example.com"
+      "authorizePath": "/oauth/authorize",
+      "jwksUri": "https://auth.example.com/.well-known/jwks.json",
+      "scope": "openid kafka:read kafka:write",
+      "audience": "https://kafka.example.com",
+      "grantType": "client_credentials",
+      "validateToken": true,
+      "customParams": {
+        "resource": "https://kafka.example.com"
+      }
     }
   },
   "file": {
