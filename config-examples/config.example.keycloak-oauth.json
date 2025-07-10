@@ -7,10 +7,13 @@
     "sasl": {
       "mechanism": "oauthbearer",
       "keycloakUrl": "https://keycloak.example.com",
-      "realm": "kafka-realm",
+      "realm": "your-realm",
       "clientId": "kafka-client",
       "clientSecret": "your-client-secret",
-      "scope": "openid"
+      "scope": "openid kafka-access",
+      "grantType": "client_credentials",
+      "validateToken": true,
+      "_comment": "Discovery URL is automatically generated for Keycloak using the realm"
     }
   },
   "file": {
