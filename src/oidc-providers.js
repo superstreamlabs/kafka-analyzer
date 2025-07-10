@@ -134,10 +134,14 @@ class GenericOIDCProvider extends OIDCProvider {
         ...this.oauth2ClientConfig,
         auth: {
           tokenHost: this.discoveryDocument.issuer,
-          tokenPath: new URL(this.discoveryDocument.token_endpoint).pathname,
-          authorizePath: new URL(this.discoveryDocument.authorization_endpoint).pathname
+          tokenPath: new URL(this.discoveryDocument.token_endpoint).pathname
         }
       };
+      
+      // Only add authorizePath for authorization_code grant type
+      if (this.config.grantType === 'authorization_code' && this.discoveryDocument.authorization_endpoint) {
+        oauth2Config.auth.authorizePath = new URL(this.discoveryDocument.authorization_endpoint).pathname;
+      }
       
       if (this.discoveryDocument.revocation_endpoint) {
         oauth2Config.auth.revokePath = new URL(this.discoveryDocument.revocation_endpoint).pathname;
