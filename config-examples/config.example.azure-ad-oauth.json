@@ -1,0 +1,22 @@
+{
+  "kafka": {
+    "brokers": ["your-kafka-broker.servicebus.windows.net:9093"],
+    "clientId": "superstream-analyzer",
+    "vendor": "azure",
+    "useSasl": true,
+    "sasl": {
+      "mechanism": "oauthbearer",
+      "tenantId": "your-tenant-id",
+      "clientId": "your-client-id",
+      "clientSecret": "your-client-secret",
+      "scope": "your-client-id/.default"
+    }
+  },
+  "file": {
+    "outputDir": "./kafka-analysis",
+    "formats": ["html"],
+    "includeMetadata": true,
+    "includeTimestamp": true
+  },
+  "email": "user@example.com"
+}
