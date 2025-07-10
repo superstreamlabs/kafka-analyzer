@@ -1,0 +1,76 @@
+Kafka Analysis Summary
+----------------------
+ZooKeepers: 1
+Brokers: 1
+Total Topics: 2
+User Topics: 1
+Internal Topics: 1
+Total Partitions: 51
+Topics with Issues: 0
+
+Health Check Results
+-------------------
+Total Checks: 14
+✅ Passed: 7
+❌ Failed: 1
+⚠️  Warnings: 4
+
+✅ Replication Factor vs Broker Count
+   📋 Checks if any topic has a replication factor greater than the number of brokers. Healthy: All topics have RF ≤ broker count. Failed: Any topic has RF > broker count.
+   All topics have appropriate replication factor (≤ 1 brokers)
+
+✅ Topic Partition Distribution
+   📋 Checks if user topics have a balanced number of partitions. Healthy: Partition counts are similar. Warning: Large difference between min and max partitions.
+   Good partition distribution: avg=1.0, min=1, max=1
+
+ℹ️ Consumer Group Health
+   📋 Checks if all consumer groups have active members. Healthy: All groups have members. Warning: Some groups have no active members.
+   No consumer groups found
+
+✅ Internal Topics Health
+   📋 Checks if all internal topics (names starting with __) have partitions > 0. Healthy: All internal topics have partitions. Failed: Any internal topic has 0 or missing partitions.
+   All 1 internal topics are healthy
+
+✅ Under-Replicated Partitions
+   All topics have the expected number of in-sync replicas
+
+✅ Min In-Sync Replicas Configuration
+   All topics have appropriate min.insync.replicas configuration
+
+⚠️ Rack Awareness
+   📋 Checks if rack awareness is configured in the cluster. Healthy: Rack awareness is configured. Warning: Rack awareness is not configured.
+   Rack awareness is not configured - no brokers have rack information
+   💡 Recommendation: Consider enabling rack awareness for better availability and fault tolerance
+
+✅ Replica Distribution
+   📋 Checks if data replicas are evenly distributed across all brokers. Healthy: Each broker carries a similar number of replicas. Warning/Failed: Some brokers carry significantly more replicas than others, which can cause performance issues.
+   Perfect replica balance: Each broker carries 51.0 replicas on average (range: 51-51)
+
+⚠️ Metrics Configuration
+   📋 Checks if monitoring metrics are properly configured. For AWS MSK: Checks Open Monitoring with Prometheus JMX exporter. For others: Checks JMX metrics configuration. Healthy: Metrics are enabled and accessible. Warning: Metrics are not configured or partially configured.
+   No JMX metrics configuration detected on any brokers
+   💡 Recommendation: Enable JMX metrics on brokers for better monitoring, alerting, and performance analysis
+
+ℹ️ Generic Kafka Logging Configuration
+   📋 Checks if logging configuration is properly configured. For AWS MSK: Checks LoggingInfo configuration and CloudTrail. For Confluent Cloud/Aiven: Built-in logging is available. For others: Checks log4j configuration. Healthy: Logging is enabled and configured. Warning: Logging is not configured or partially configured.
+   Generic Kafka logging configuration check
+   💡 Recommendation: Verify log4j configuration and log directory permissions in server.properties
+
+❌ Generic Kafka Authentication Configuration
+   📋 Checks if unauthenticated access is enabled. For AWS MSK: Checks if SASL or SSL is configured. For Confluent Cloud/Aiven: Built-in authentication prevents unauthenticated access. For others: Checks if SASL or SSL is configured. Healthy: Authentication is enabled (no unauthenticated access). Failed: Unauthenticated access is enabled (security risk).
+   Unauthenticated access is enabled - this is a security risk
+   💡 Recommendation: Enable SASL or SSL authentication in server.properties for better security
+
+⚠️ Generic Kafka Quotas Configuration
+   📋 Checks if Kafka quotas are configured and being used. For AWS MSK: Checks quota configuration via AWS console/CLI. For Confluent Cloud/Aiven: Built-in quota management is available. For others: Checks server.properties and kafka-configs.sh for quota settings. Healthy: Quotas are configured and managed. Info: Quotas configuration check available.
+   No quota configuration detected in Kafka cluster
+   💡 Recommendation: Configure quotas in server.properties or use kafka-configs.sh to set client quotas for better resource management
+
+⚠️ Payload Compression
+   📋 Checks if payload compression is enabled on user topics. Analyzes compression.type, compression, and producer.compression.type configurations. Healthy: All user topics have compression enabled (100%). Warning: Some or no topics have compression enabled (<100%). Info: No user topics to analyze.
+   No compression detected on any of the 1 user topics (0%)
+   💡 Recommendation: Enable compression on topics to reduce storage usage and improve network performance
+
+✅ Infinite Retention Policy
+   📋 Checks if any topics have infinite retention policy enabled (retention.ms = infinite). Healthy: No topics have infinite retention. Warning: Some topics have infinite retention policy (bad practice). Info: Unable to verify retention policy.
+   No topics have infinite retention policy enabled

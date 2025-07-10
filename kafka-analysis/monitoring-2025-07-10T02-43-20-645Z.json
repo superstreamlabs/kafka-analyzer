@@ -1,0 +1,163 @@
+{
+  "timestamp": "2025-07-10T02:43:20.645Z",
+  "type": "continuous_analysis",
+  "healthScore": 0,
+  "metrics": {
+    "topics": [
+      {
+        "name": "test_topic",
+        "replicationFactor": 0,
+        "isInternal": false
+      },
+      {
+        "name": "__consumer_offsets",
+        "replicationFactor": 0,
+        "isInternal": true
+      }
+    ],
+    "consumers": [],
+    "cluster": {
+      "brokers": 1,
+      "controller": 1,
+      "clusterId": "MkU3OEVBNTcwNTJENDM2Qk"
+    }
+  },
+  "healthResults": {
+    "vendor": "apache",
+    "totalChecks": 14,
+    "passedChecks": 7,
+    "failedChecks": 1,
+    "warnings": 4,
+    "checks": [
+      {
+        "id": "replication-factor",
+        "name": "Replication Factor vs Broker Count",
+        "status": "pass",
+        "message": "All topics have appropriate replication factor (≤ 1 brokers)",
+        "recommendation": null,
+        "description": "Checks if any topic has a replication factor greater than the number of brokers. Healthy: All topics have RF ≤ broker count. Failed: Any topic has RF > broker count."
+      },
+      {
+        "id": "partition-distribution",
+        "name": "Topic Partition Distribution",
+        "status": "pass",
+        "message": "Good partition distribution: avg=1.0, min=1, max=1",
+        "recommendation": null,
+        "description": "Checks if user topics have a balanced number of partitions. Healthy: Partition counts are similar. Warning: Large difference between min and max partitions."
+      },
+      {
+        "id": "consumer-groups",
+        "name": "Consumer Group Health",
+        "status": "info",
+        "message": "No consumer groups found",
+        "recommendation": null,
+        "description": "Checks if all consumer groups have active members. Healthy: All groups have members. Warning: Some groups have no active members."
+      },
+      {
+        "id": "internal-topics",
+        "name": "Internal Topics Health",
+        "status": "pass",
+        "message": "All 1 internal topics are healthy",
+        "recommendation": null,
+        "description": "Checks if all internal topics (names starting with __) have partitions > 0. Healthy: All internal topics have partitions. Failed: Any internal topic has 0 or missing partitions."
+      },
+      {
+        "id": "under-replicated-partitions",
+        "name": "Under-Replicated Partitions",
+        "status": "pass",
+        "message": "All topics have the expected number of in-sync replicas",
+        "recommendation": null,
+        "description": ""
+      },
+      {
+        "id": "min-insync-replicas",
+        "name": "Min In-Sync Replicas Configuration",
+        "status": "pass",
+        "message": "All topics have appropriate min.insync.replicas configuration",
+        "recommendation": null,
+        "description": ""
+      },
+      {
+        "id": "rack-awareness",
+        "name": "Rack Awareness",
+        "status": "warning",
+        "message": "Rack awareness is not configured - no brokers have rack information",
+        "recommendation": "Consider enabling rack awareness for better availability and fault tolerance",
+        "description": "Checks if rack awareness is configured in the cluster. Healthy: Rack awareness is configured. Warning: Rack awareness is not configured."
+      },
+      {
+        "id": "replica-distribution",
+        "name": "Replica Distribution",
+        "status": "pass",
+        "message": "Perfect replica balance: Each broker carries 51.0 replicas on average (range: 51-51)",
+        "recommendation": null,
+        "description": "Checks if data replicas are evenly distributed across all brokers. Healthy: Each broker carries a similar number of replicas. Warning/Failed: Some brokers carry significantly more replicas than others, which can cause performance issues."
+      },
+      {
+        "id": "metrics-enabled",
+        "name": "Metrics Configuration",
+        "status": "warning",
+        "message": "No JMX metrics configuration detected on any brokers",
+        "recommendation": "Enable JMX metrics on brokers for better monitoring, alerting, and performance analysis",
+        "description": "Checks if monitoring metrics are properly configured. For AWS MSK: Checks Open Monitoring with Prometheus JMX exporter. For others: Checks JMX metrics configuration. Healthy: Metrics are enabled and accessible. Warning: Metrics are not configured or partially configured."
+      },
+      {
+        "id": "logging-configuration",
+        "name": "Generic Kafka Logging Configuration",
+        "status": "info",
+        "message": "Generic Kafka logging configuration check",
+        "recommendation": "Verify log4j configuration and log directory permissions in server.properties",
+        "description": "Checks if logging configuration is properly configured. For AWS MSK: Checks LoggingInfo configuration and CloudTrail. For Confluent Cloud/Aiven: Built-in logging is available. For others: Checks log4j configuration. Healthy: Logging is enabled and configured. Warning: Logging is not configured or partially configured."
+      },
+      {
+        "id": "authentication-configuration",
+        "name": "Generic Kafka Authentication Configuration",
+        "status": "fail",
+        "message": "Unauthenticated access is enabled - this is a security risk",
+        "recommendation": "Enable SASL or SSL authentication in server.properties for better security",
+        "description": "Checks if unauthenticated access is enabled. For AWS MSK: Checks if SASL or SSL is configured. For Confluent Cloud/Aiven: Built-in authentication prevents unauthenticated access. For others: Checks if SASL or SSL is configured. Healthy: Authentication is enabled (no unauthenticated access). Failed: Unauthenticated access is enabled (security risk)."
+      },
+      {
+        "id": "quotas-configuration",
+        "name": "Generic Kafka Quotas Configuration",
+        "status": "warning",
+        "message": "No quota configuration detected in Kafka cluster",
+        "recommendation": "Configure quotas in server.properties or use kafka-configs.sh to set client quotas for better resource management",
+        "description": "Checks if Kafka quotas are configured and being used. For AWS MSK: Checks quota configuration via AWS console/CLI. For Confluent Cloud/Aiven: Built-in quota management is available. For others: Checks server.properties and kafka-configs.sh for quota settings. Healthy: Quotas are configured and managed. Info: Quotas configuration check available."
+      },
+      {
+        "id": "payload-compression",
+        "name": "Payload Compression",
+        "status": "warning",
+        "message": "No compression detected on any of the 1 user topics (0%)",
+        "recommendation": "Enable compression on topics to reduce storage usage and improve network performance",
+        "description": "Checks if payload compression is enabled on user topics. Analyzes compression.type, compression, and producer.compression.type configurations. Healthy: All user topics have compression enabled (100%). Warning: Some or no topics have compression enabled (<100%). Info: No user topics to analyze."
+      },
+      {
+        "id": "infinite-retention-policy",
+        "name": "Infinite Retention Policy",
+        "status": "pass",
+        "message": "No topics have infinite retention policy enabled",
+        "recommendation": null,
+        "description": "Checks if any topics have infinite retention policy enabled (retention.ms = infinite). Healthy: No topics have infinite retention. Warning: Some topics have infinite retention policy (bad practice). Info: Unable to verify retention policy."
+      }
+    ]
+  },
+  "analysis": {
+    "status": "healthy",
+    "issues": [],
+    "improvements": [],
+    "insights": [
+      "All systems operating normally"
+    ],
+    "changesSinceBaseline": {}
+  },
+  "baseline": {
+    "timestamp": "2025-07-10T02:40:20.642Z",
+    "healthScore": 0,
+    "topicCount": 2,
+    "totalPartitions": null,
+    "consumerGroups": 0,
+    "totalLag": 0
+  }
+}
