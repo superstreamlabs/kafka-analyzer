@@ -1,0 +1,850 @@
+<html lang="en"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modern Kafka Health Report</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      min-height: 100vh;
+      color: #1e293b;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .report-card {
+      background: white;
+      border-radius: 24px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      overflow: hidden;
+      display: flex;
+      min-height: 800px;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 380px;
+      background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+      padding: 32px;
+      color: white;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .logo {
+      width: 128px;
+      height: 48px;
+      margin-bottom: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo img {
+      width: 120px;
+      height: auto;
+      max-height: 48px;
+    }
+
+    .cluster-overview h2 {
+      color: #60a5fa;
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 24px;
+    }
+
+    .overview-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    .overview-item {
+      background: rgba(71, 85, 105, 0.5);
+      border-radius: 12px;
+      padding: 12px 16px;
+      min-height: 60px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .overview-item-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .overview-item-icon {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    .overview-item-icon.icon-database {
+      filter: brightness(0) saturate(100%) invert(64%) sepia(42%) saturate(4174%) hue-rotate(200deg) brightness(101%) contrast(91%);
+    }
+
+    .overview-item-icon.icon-activity {
+      filter: brightness(0) saturate(100%) invert(71%) sepia(77%) saturate(1571%) hue-rotate(108deg) brightness(94%) contrast(86%);
+    }
+
+    .overview-item-icon.icon-users {
+      filter: brightness(0) saturate(100%) invert(64%) sepia(15%) saturate(1687%) hue-rotate(225deg) brightness(100%) contrast(91%);
+    }
+
+    .overview-item-icon.icon-calendar {
+      filter: brightness(0) saturate(100%) invert(82%) sepia(69%) saturate(2618%) hue-rotate(3deg) brightness(103%) contrast(97%);
+    }
+
+    .overview-item-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: #cbd5e1;
+    }
+
+    .overview-item-value {
+      font-size: 16px;
+      font-weight: 600;
+      color: white;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+    }
+
+    .topic-stats {
+      border-top: 1px solid #475569;
+      padding-top: 24px;
+    }
+
+    .topic-stats h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #cbd5e1;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .stat-label {
+      color: #cbd5e1;
+    }
+
+    .stat-value {
+      font-weight: 600;
+      color: white;
+    }
+
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      padding: 48px;
+    }
+
+    .header {
+      margin-bottom: 32px;
+    }
+
+    .header h1 {
+      font-size: 36px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 16px;
+    }
+
+    .header p {
+      font-size: 18px;
+      color: #64748b;
+    }
+
+    /* Health Summary */
+    .health-summary {
+      background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 32px;
+    }
+
+    .health-summary h2 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 16px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 16px;
+    }
+
+    .summary-item {
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .summary-number {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .summary-label {
+      font-size: 14px;
+      color: #64748b;
+    }
+
+    .summary-number.total { color: #1e293b; }
+    .summary-number.passed { color: #059669; }
+    .summary-number.warning { color: #d97706; }
+    .summary-number.failed { color: #dc2626; }
+
+    /* Health Checks */
+    .health-checks-section h2 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 24px;
+    }
+
+    .health-checks {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .health-check {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 24px;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .health-check:hover {
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      transform: translateY(-2px);
+    }
+
+    .health-check.pass {
+      border-left: 4px solid #10b981;
+    }
+
+    .health-check.warning {
+      border-left: 4px solid #f59e0b;
+    }
+
+    .health-check.fail {
+      border-left: 4px solid #ef4444;
+    }
+
+    .health-check.info {
+      border-left: 4px solid #3b82f6;
+    }
+
+    .check-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .status-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      padding: 4px;
+    }
+
+    .status-icon.pass { 
+      background-color: #10b981;
+    }
+    
+    .status-icon.warning { 
+      background-color: #f59e0b;
+    }
+    
+    .status-icon.fail { 
+      background-color: #ef4444;
+    }
+    
+    .status-icon.info { 
+      background-color: #3b82f6;
+    }
+
+    .status-icon img {
+      width: 16px;
+      height: 16px;
+      filter: brightness(0) invert(1);
+    }
+
+    .check-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1e293b;
+      flex: 1;
+    }
+
+    .status-badge {
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .status-badge.pass {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .status-badge.warning {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .status-badge.fail {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .status-badge.info {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+
+    .check-description {
+      color: #64748b;
+      font-size: 14px;
+      margin-bottom: 12px;
+      font-style: italic;
+    }
+
+    .check-message {
+      color: #374151;
+      margin-bottom: 12px;
+    }
+
+    .check-recommendation {
+      background: #dbeafe;
+      border-radius: 8px;
+      padding: 12px;
+      border-left: 4px solid #3b82f6;
+    }
+
+    .check-recommendation p {
+      color: #1e40af;
+      font-size: 14px;
+      margin: 0;
+    }
+
+    .recommendation-label {
+      font-weight: 600;
+    }
+
+    /* Footer */
+    .footer {
+      margin-top: 48px;
+      background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .footer p {
+      color: #64748b;
+      margin-bottom: 16px;
+    }
+
+    .footer a {
+      color: #3b82f6;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .footer a:hover {
+      color: #1d4ed8;
+      text-decoration: underline;
+    }
+
+    .footer-note {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-top: 16px;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1024px) {
+      .report-card {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+        padding: 24px;
+      }
+
+      .overview-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .main-content {
+        padding: 32px 24px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .container {
+        padding: 16px;
+      }
+
+      .overview-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .summary-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .main-content {
+        padding: 24px 16px;
+      }
+
+      .health-check {
+        padding: 16px;
+      }
+
+      .header h1 {
+        font-size: 28px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="report-card">
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <div class="logo">
+          <img src="../static/superstream-logo.png" alt="Superstream Logo" />
+        </div>
+        
+        <div class="cluster-overview">
+          <h2>Cluster Overview</h2>
+          
+          <div class="overview-grid">
+            <div class="overview-item">
+              <div class="overview-item-header">
+                <img src="../static/icons/database.svg" alt="Database" class="overview-item-icon icon-database" />
+                <span class="overview-item-label">Vendor</span>
+              </div>
+              <div class="overview-item-value">apache-kafka</div>
+            </div>
+            
+            <div class="overview-item">
+              <div class="overview-item-header">
+                <img src="../static/icons/activity.svg" alt="Activity" class="overview-item-icon icon-activity" />
+                <span class="overview-item-label">Brokers</span>
+              </div>
+              <div class="overview-item-value">1</div>
+            </div>
+            
+            <div class="overview-item">
+              <div class="overview-item-header">
+                <img src="../static/icons/users.svg" alt="Users" class="overview-item-icon icon-users" />
+                <span class="overview-item-label">ZooKeepers</span>
+              </div>
+              <div class="overview-item-value">1</div>
+            </div>
+            
+            <div class="overview-item">
+              <div class="overview-item-header">
+                <img src="../static/icons/calendar.svg" alt="Calendar" class="overview-item-icon icon-calendar" />
+                <span class="overview-item-label">Generated</span>
+              </div>
+              <div class="overview-item-value" style="font-size: 14px;">7/10/2025, 3:01:55 AM</div>
+            </div>
+          </div>
+          
+          <div class="topic-stats">
+            <h3>Topic Statistics</h3>
+            <div class="stat-row">
+              <span class="stat-label">Total Topics</span>
+              <span class="stat-value">2</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">User Topics</span>
+              <span class="stat-value">1</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Internal Topics</span>
+              <span class="stat-value">1</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Total Partitions</span>
+              <span class="stat-value">51</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-label">Topics with Issues</span>
+              <span class="stat-value">0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <div class="main-content">
+        <div class="header">
+          <h1>Kafka Health Report</h1>
+          <p>Comprehensive analysis of your Kafka cluster health and performance</p>
+        </div>
+
+        
+      <!-- Health Summary -->
+      <div class="health-summary">
+        <h2>Health Check Summary</h2>
+        <div class="summary-grid">
+          <div class="summary-item">
+            <div class="summary-number total">14</div>
+            <div class="summary-label">Total Checks</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-number passed">7</div>
+            <div class="summary-label">Passed</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-number warning">5</div>
+            <div class="summary-label">Warnings</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-number failed">1</div>
+            <div class="summary-label">Failed</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Health Checks -->
+      <div class="health-checks-section">
+        <h2>Health Check Results</h2>
+        
+        <div class="health-checks">
+    
+        <div class="health-check fail">
+          <div class="check-header">
+            <div class="status-icon fail">
+              <img src="../static/icons/x-circle.svg" alt="Failed" />
+            </div>
+            <h3 class="check-title">Generic Kafka Authentication Configuration</h3>
+            <span class="status-badge fail">Failed</span>
+          </div>
+          
+          <div class="check-description">
+            Checks if unauthenticated access is enabled. For AWS MSK: Checks if SASL or SSL is configured. For Confluent Cloud/Aiven: Built-in authentication prevents unauthenticated access. For others: Checks if SASL or SSL is configured. Healthy: Authentication is enabled (no unauthenticated access). Failed: Unauthenticated access is enabled (security risk).
+          </div>
+          <div class="check-message">
+            Unauthenticated access is enabled - this is a security risk
+          </div>
+          
+          <div class="check-recommendation">
+            <p><span class="recommendation-label">💡 Recommendation:</span> Enable SASL or SSL authentication in server.properties for better security</p>
+          </div>
+        </div>
+      
+        <div class="health-check warning">
+          <div class="check-header">
+            <div class="status-icon warning">
+              <img src="../static/icons/alert-triangle.svg" alt="Warning" />
+            </div>
+            <h3 class="check-title">Consumer Group Health</h3>
+            <span class="status-badge warning">Warning</span>
+          </div>
+          
+          <div class="check-description">
+            Checks if all consumer groups have active members. Healthy: All groups have members. Warning: Some groups have no active members.
+          </div>
+          <div class="check-message">
+            1 consumer group(s) have no active members: perf-test-group
+          </div>
+          
+          <div class="check-recommendation">
+            <p><span class="recommendation-label">💡 Recommendation:</span> Consider cleaning up unused consumer groups</p>
+          </div>
+        </div>
+      
+        <div class="health-check warning">
+          <div class="check-header">
+            <div class="status-icon warning">
+              <img src="../static/icons/alert-triangle.svg" alt="Warning" />
+            </div>
+            <h3 class="check-title">Rack Awareness</h3>
+            <span class="status-badge warning">Warning</span>
+          </div>
+          
+          <div class="check-description">
+            Checks if rack awareness is configured in the cluster. Healthy: Rack awareness is configured. Warning: Rack awareness is not configured.
+          </div>
+          <div class="check-message">
+            Rack awareness is not configured - no brokers have rack information
+          </div>
+          
+          <div class="check-recommendation">
+            <p><span class="recommendation-label">💡 Recommendation:</span> Consider enabling rack awareness for better availability and fault tolerance</p>
+          </div>
+        </div>
+      
+        <div class="health-check warning">
+          <div class="check-header">
+            <div class="status-icon warning">
+              <img src="../static/icons/alert-triangle.svg" alt="Warning" />
+            </div>
+            <h3 class="check-title">Metrics Configuration</h3>
+            <span class="status-badge warning">Warning</span>
+          </div>
+          
+          <div class="check-description">
+            Checks if monitoring metrics are properly configured. For AWS MSK: Checks Open Monitoring with Prometheus JMX exporter. For others: Checks JMX metrics configuration. Healthy: Metrics are enabled and accessible. Warning: Metrics are not configured or partially configured.
+          </div>
+          <div class="check-message">
+            No JMX metrics configuration detected on any brokers
+          </div>
+          
+          <div class="check-recommendation">
+            <p><span class="recommendation-label">💡 Recommendation:</span> Enable JMX metrics on brokers for better monitoring, alerting, and performance analysis</p>
+          </div>
+        </div>
+      
+        <div class="health-check warning">
+          <div class="check-header">
+            <div class="status-icon warning">
+              <img src="../static/icons/alert-triangle.svg" alt="Warning" />
+            </div>
+            <h3 class="check-title">Generic Kafka Quotas Configuration</h3>
+            <span class="status-badge warning">Warning</span>
+          </div>
+          
+          <div class="check-description">
+            Checks if Kafka quotas are configured and being used. For AWS MSK: Checks quota configuration via AWS console/CLI. For Confluent Cloud/Aiven: Built-in quota management is available. For others: Checks server.properties and kafka-configs.sh for quota settings. Healthy: Quotas are configured and managed. Info: Quotas configuration check available.
+          </div>
+          <div class="check-message">
+            No quota configuration detected in Kafka cluster
+          </div>
+          
+          <div class="check-recommendation">
+            <p><span class="recommendation-label">💡 Recommendation:</span> Configure quotas in server.properties or use kafka-configs.sh to set client quotas for better resource management</p>
+          </div>
+        </div>
+      
+        <div class="health-check warning">
+          <div class="check-header">
+            <div class="status-icon warning">
+              <img src="../static/icons/alert-triangle.svg" alt="Warning" />
+            </div>
+            <h3 class="check-title">Payload Compression</h3>
+            <span class="status-badge warning">Warning</span>
+          </div>
+          
+          <div class="check-description">
+            Checks if payload compression is enabled on user topics. Analyzes compression.type, compression, and producer.compression.type configurations. Healthy: All user topics have compression enabled (100%). Warning: Some or no topics have compression enabled (<100%). Info: No user topics to analyze.
+          </div>
+          <div class="check-message">
+            No compression detected on any of the 1 user topics (0%)
+          </div>
+          
+          <div class="check-recommendation">
+            <p><span class="recommendation-label">💡 Recommendation:</span> Enable compression on topics to reduce storage usage and improve network performance</p>
+          </div>
+        </div>
+      
+        <div class="health-check info">
+          <div class="check-header">
+            <div class="status-icon info">
+              <img src="../static/icons/info.svg" alt="Info" />
+            </div>
+            <h3 class="check-title">Generic Kafka Logging Configuration</h3>
+            <span class="status-badge info">Info</span>
+          </div>
+          
+          <div class="check-description">
+            Checks if logging configuration is properly configured. For AWS MSK: Checks LoggingInfo configuration and CloudTrail. For Confluent Cloud/Aiven: Built-in logging is available. For others: Checks log4j configuration. Healthy: Logging is enabled and configured. Warning: Logging is not configured or partially configured.
+          </div>
+          <div class="check-message">
+            Generic Kafka logging configuration check
+          </div>
+          
+          <div class="check-recommendation">
+            <p><span class="recommendation-label">💡 Recommendation:</span> Verify log4j configuration and log directory permissions in server.properties</p>
+          </div>
+        </div>
+      
+        <div class="health-check pass">
+          <div class="check-header">
+            <div class="status-icon pass">
+              <img src="../static/icons/check-circle.svg" alt="Passed" />
+            </div>
+            <h3 class="check-title">Replication Factor vs Broker Count</h3>
+            <span class="status-badge pass">Passed</span>
+          </div>
+          
+          <div class="check-description">
+            Checks if any topic has a replication factor greater than the number of brokers. Healthy: All topics have RF ≤ broker count. Failed: Any topic has RF > broker count.
+          </div>
+          <div class="check-message">
+            All topics have appropriate replication factor (≤ 1 brokers)
+          </div>
+          
+        </div>
+      
+        <div class="health-check pass">
+          <div class="check-header">
+            <div class="status-icon pass">
+              <img src="../static/icons/check-circle.svg" alt="Passed" />
+            </div>
+            <h3 class="check-title">Topic Partition Distribution</h3>
+            <span class="status-badge pass">Passed</span>
+          </div>
+          
+          <div class="check-description">
+            Checks if user topics have a balanced number of partitions. Healthy: Partition counts are similar. Warning: Large difference between min and max partitions.
+          </div>
+          <div class="check-message">
+            Good partition distribution: avg=1.0, min=1, max=1
+          </div>
+          
+        </div>
+      
+        <div class="health-check pass">
+          <div class="check-header">
+            <div class="status-icon pass">
+              <img src="../static/icons/check-circle.svg" alt="Passed" />
+            </div>
+            <h3 class="check-title">Internal Topics Health</h3>
+            <span class="status-badge pass">Passed</span>
+          </div>
+          
+          <div class="check-description">
+            Checks if all internal topics (names starting with __) have partitions > 0. Healthy: All internal topics have partitions. Failed: Any internal topic has 0 or missing partitions.
+          </div>
+          <div class="check-message">
+            All 1 internal topics are healthy
+          </div>
+          
+        </div>
+      
+        <div class="health-check pass">
+          <div class="check-header">
+            <div class="status-icon pass">
+              <img src="../static/icons/check-circle.svg" alt="Passed" />
+            </div>
+            <h3 class="check-title">Under-Replicated Partitions</h3>
+            <span class="status-badge pass">Passed</span>
+          </div>
+          
+          <div class="check-message">
+            All topics have the expected number of in-sync replicas
+          </div>
+          
+        </div>
+      
+        <div class="health-check pass">
+          <div class="check-header">
+            <div class="status-icon pass">
+              <img src="../static/icons/check-circle.svg" alt="Passed" />
+            </div>
+            <h3 class="check-title">Min In-Sync Replicas Configuration</h3>
+            <span class="status-badge pass">Passed</span>
+          </div>
+          
+          <div class="check-message">
+            All topics have appropriate min.insync.replicas configuration
+          </div>
+          
+        </div>
+      
+        <div class="health-check pass">
+          <div class="check-header">
+            <div class="status-icon pass">
+              <img src="../static/icons/check-circle.svg" alt="Passed" />
+            </div>
+            <h3 class="check-title">Replica Distribution</h3>
+            <span class="status-badge pass">Passed</span>
+          </div>
+          
+          <div class="check-description">
+            Checks if data replicas are evenly distributed across all brokers. Healthy: Each broker carries a similar number of replicas. Warning/Failed: Some brokers carry significantly more replicas than others, which can cause performance issues.
+          </div>
+          <div class="check-message">
+            Perfect replica balance: Each broker carries 51.0 replicas on average (range: 51-51)
+          </div>
+          
+        </div>
+      
+        <div class="health-check pass">
+          <div class="check-header">
+            <div class="status-icon pass">
+              <img src="../static/icons/check-circle.svg" alt="Passed" />
+            </div>
+            <h3 class="check-title">Infinite Retention Policy</h3>
+            <span class="status-badge pass">Passed</span>
+          </div>
+          
+          <div class="check-description">
+            Checks if any topics have infinite retention policy enabled (retention.ms = infinite). Healthy: No topics have infinite retention. Warning: Some topics have infinite retention policy (bad practice). Info: Unable to verify retention policy.
+          </div>
+          <div class="check-message">
+            No topics have infinite retention policy enabled
+          </div>
+          
+        </div>
+      
+        </div>
+      </div>
+    
+
+        <!-- Footer -->
+        <div class="footer">
+          <p>
+            <em>Generated by <a href="https://superstream.ai">Superstream</a> Kafka Analyzer</em>
+          </p>
+          <p>
+            Want to fix your Kafka issues automatically and continuously? <a href="https://superstream.ai">Learn more</a>
+          </p>
+          
+          <!-- Superstream CTA -->
+          <div style="margin: 24px 0; text-align: center;">
+            <a href="https://superstream.ai" target="_blank">
+              <img src="../static/superstream-cta.png" alt="Superstream - Fix your Kafka issues automatically" style="max-width: 100%; height: auto; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: transform 0.2s ease, box-shadow 0.2s ease;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 20px rgba(0,0,0,0.2)'" onmouseout="this.style.transform='translateY(0px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'" />
+            </a>
+          </div>
+          
+          <div class="footer-note">
+            All rights reserved to Superstream Labs Inc 2025. You own your data and it is never shared with anyone, including us.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body></html>

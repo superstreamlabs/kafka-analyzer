@@ -46,6 +46,23 @@ class CLI {
 
       this.config = config;
       
+      // Normalize brokers/bootstrap_servers to array format
+      if (this.config.kafka) {
+        // Handle both 'bootstrap_servers' and 'brokers' fields
+        const brokers = this.config.kafka.bootstrap_servers || this.config.kafka.brokers;
+        
+        if (brokers) {
+          if (Array.isArray(brokers)) {
+            this.config.kafka.brokers = brokers;
+          } else if (typeof brokers === 'string') {
+            this.config.kafka.brokers = brokers.split(',').map(broker => broker.trim());
+          }
+          
+          // Remove bootstrap_servers field if it exists, standardize on 'brokers'
+          delete this.config.kafka.bootstrap_servers;
+        }
+      }
+      
       // Add email if not present in config file
       if (!this.config.email) {
         this.config.email = '';
@@ -261,6 +278,10 @@ class CLI {
     // Build kafka config
     this.config.kafka = {
       ...kafkaAnswers,
+      // Convert brokers string to array
+      brokers: Array.isArray(kafkaAnswers.brokers) 
+        ? kafkaAnswers.brokers 
+        : kafkaAnswers.brokers.split(',').map(broker => broker.trim()),
       vendor: vendorAnswer.vendor,
       useSasl: !!saslConfig,
       sasl: saslConfig
@@ -345,6 +366,12 @@ class CLI {
       } else {
         console.log(chalk.gray('Debug: No config file specified, using interactive mode'));
         await this.promptForConfig();
+        
+        // Override with command line options if provided
+        if (this.options.bootstrapServers) {
+          console.log(chalk.gray(`Debug: Overriding brokers with command line option: ${this.options.bootstrapServers}`));
+          this.config.kafka.brokers = this.options.bootstrapServers.split(',').map(broker => broker.trim());
+        }
       }
 
       // Initialize services without validation
