@@ -6,11 +6,14 @@
     "useSasl": true,
     "sasl": {
       "mechanism": "oauthbearer",
-      "domain": "dev-12345.okta.com",
-      "clientId": "0oa1234567890abcde",
+      "domain": "your-okta-domain.okta.com",
+      "clientId": "your-client-id",
       "clientSecret": "your-client-secret",
       "authorizationServerId": "default",
-      "scope": "openid kafka"
+      "scope": "openid kafka:access",
+      "grantType": "client_credentials",
+      "validateToken": true,
+      "_comment": "Discovery URL is automatically generated for Okta using the domain and authorization server ID"
     }
   },
   "file": {
