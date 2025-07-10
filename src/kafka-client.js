@@ -4,6 +4,7 @@ const chalk = require('chalk');
 const crypto = require('crypto');
 const { generateAuthToken } = require('aws-msk-iam-sasl-signer-js');
 const { ClientCredentials } = require('simple-oauth2');
+const { createOAuthProvider } = require('./oauth-providers');
 
 class KafkaClient {
   constructor(config) {
@@ -85,31 +86,17 @@ class KafkaClient {
             // Aiven uses SASL_SSL with SCRAM-SHA-256 or OAuth
             kafkaConfig.ssl = await this.buildSslConfig();
             if (mechanism === 'oauthbearer') {
+              const oauthProvider = createOAuthProvider('generic', {
+                clientId: this.config.sasl.clientId,
+                clientSecret: this.config.sasl.clientSecret,
+                tokenHost: this.config.sasl.host || this.config.sasl.tokenHost,
+                tokenPath: this.config.sasl.path || this.config.sasl.tokenPath
+              });
+              
               kafkaConfig.sasl = {
                 mechanism: 'oauthbearer',
                 oauthBearerProvider: async () => {
-                  const client = new ClientCredentials({
-                    client: {
-                      id: this.config.sasl.clientId,
-                      secret: this.config.sasl.clientSecret
-                    },
-                    auth: {
-                      tokenHost: this.config.sasl.host,
-                      tokenPath: this.config.sasl.path
-                    }
-                  });
-
-                  try {
-                    console.log("Getting access token...");
-                    const accessToken = await client.getToken({});
-
-                    return {
-                      value: accessToken.token.access_token
-                    };
-
-                  } catch (error) {
-                    throw error;
-                  }
+                  return await oauthProvider.getToken();
                 }
               };
             } else {
@@ -141,6 +128,106 @@ class KafkaClient {
               username: this.config.sasl.username,
               password: this.config.sasl.password
             };
+            break;
+
+          case 'azure':
+          case 'azure-event-hubs':
+            // Azure Event Hubs with OAuth
+            console.log('🔐 Using Azure AD OAuth authentication...');
+            kafkaConfig.ssl = true; // Azure requires SSL
+            
+            if (mechanism === 'oauthbearer') {
+              const azureProvider = createOAuthProvider('azure-ad', {
+                tenantId: this.config.sasl.tenantId,
+                clientId: this.config.sasl.clientId,
+                clientSecret: this.config.sasl.clientSecret,
+                scope: this.config.sasl.scope || `${this.config.sasl.clientId}/.default`
+              });
+              
+              kafkaConfig.sasl = {
+                mechanism: 'oauthbearer',
+                oauthBearerProvider: async () => {
+                  return await azureProvider.getToken();
+                }
+              };
+            } else {
+              // Fallback to connection string based auth
+              kafkaConfig.sasl = {
+                mechanism: mechanism,
+                username: this.config.sasl.username || '$ConnectionString',
+                password: this.config.sasl.password || this.config.sasl.connectionString
+              };
+            }
+            break;
+
+          case 'keycloak':
+            // Keycloak OAuth authentication
+            console.log('🔐 Using Keycloak OAuth authentication...');
+            kafkaConfig.ssl = this.config.ssl !== false; // SSL recommended
+            
+            if (mechanism === 'oauthbearer') {
+              const keycloakProvider = createOAuthProvider('keycloak', {
+                keycloakUrl: this.config.sasl.keycloakUrl,
+                realm: this.config.sasl.realm,
+                clientId: this.config.sasl.clientId,
+                clientSecret: this.config.sasl.clientSecret,
+                scope: this.config.sasl.scope
+              });
+              
+              kafkaConfig.sasl = {
+                mechanism: 'oauthbearer',
+                oauthBearerProvider: async () => {
+                  return await keycloakProvider.getToken();
+                }
+              };
+            }
+            break;
+
+          case 'okta':
+            // Okta OAuth authentication
+            console.log('🔐 Using Okta OAuth authentication...');
+            kafkaConfig.ssl = true; // SSL required for OAuth
+            
+            if (mechanism === 'oauthbearer') {
+              const oktaProvider = createOAuthProvider('okta', {
+                domain: this.config.sasl.domain,
+                clientId: this.config.sasl.clientId,
+                clientSecret: this.config.sasl.clientSecret,
+                authorizationServerId: this.config.sasl.authorizationServerId,
+                scope: this.config.sasl.scope
+              });
+              
+              kafkaConfig.sasl = {
+                mechanism: 'oauthbearer',
+                oauthBearerProvider: async () => {
+                  return await oktaProvider.getToken();
+                }
+              };
+            }
+            break;
+
+          case 'custom-oauth':
+            // Generic OAuth provider
+            console.log('🔐 Using custom OAuth authentication...');
+            kafkaConfig.ssl = this.config.ssl !== false;
+            
+            if (mechanism === 'oauthbearer') {
+              const customProvider = createOAuthProvider('generic', {
+                clientId: this.config.sasl.clientId,
+                clientSecret: this.config.sasl.clientSecret,
+                tokenHost: this.config.sasl.tokenHost,
+                tokenPath: this.config.sasl.tokenPath,
+                scope: this.config.sasl.scope,
+                audience: this.config.sasl.audience
+              });
+              
+              kafkaConfig.sasl = {
+                mechanism: 'oauthbearer',
+                oauthBearerProvider: async () => {
+                  return await customProvider.getToken();
+                }
+              };
+            }
             break;
 
           case 'apache':
