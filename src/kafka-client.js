@@ -3,8 +3,8 @@ const fs = require('fs').promises;
 const chalk = require('chalk');
 const crypto = require('crypto');
 const { generateAuthToken } = require('aws-msk-iam-sasl-signer-js');
-const { ClientCredentials } = require('simple-oauth2');
-const { createOAuthProvider } = require('./oauth-providers');
+const { createOIDCProvider } = require('./oidc-providers');
+const { createOAuthProvider } = require('./oauth-providers'); // Keep legacy support
 
 class KafkaClient {
   constructor(config) {
@@ -33,6 +33,12 @@ class KafkaClient {
         const mechanism = this.config.sasl.mechanism;
 
         console.log(`🔐 Setting up ${vendor} authentication with ${mechanism}...`);
+
+        // Check if we should use OIDC
+        const useOIDC = mechanism === 'oauthbearer' && 
+                       (this.config.sasl.discoveryUrl || 
+                        this.config.sasl.useOIDC || 
+                        ['azure', 'azure-ad', 'keycloak', 'okta', 'auth0', 'google', 'oidc'].includes(vendor));
 
         // Vendor-specific authentication handling
         switch (vendor) {
@@ -85,7 +91,27 @@ class KafkaClient {
           case 'aiven':
             // Aiven uses SASL_SSL with SCRAM-SHA-256 or OAuth
             kafkaConfig.ssl = await this.buildSslConfig();
-            if (mechanism === 'oauthbearer') {
+            if (mechanism === 'oauthbearer' && useOIDC) {
+              const oidcProvider = await createOIDCProvider('oidc', {
+                ...this.config.sasl,
+                discoveryUrl: this.config.sasl.discoveryUrl,
+                clientId: this.config.sasl.clientId,
+                clientSecret: this.config.sasl.clientSecret,
+                tokenHost: this.config.sasl.host || this.config.sasl.tokenHost,
+                tokenPath: this.config.sasl.path || this.config.sasl.tokenPath,
+                scope: this.config.sasl.scope,
+                audience: this.config.sasl.audience,
+                validateToken: this.config.sasl.validateToken
+              });
+              
+              kafkaConfig.sasl = {
+                mechanism: 'oauthbearer',
+                oauthBearerProvider: async () => {
+                  return await oidcProvider.getToken();
+                }
+              };
+            } else if (mechanism === 'oauthbearer') {
+              // Legacy OAuth support
               const oauthProvider = createOAuthProvider('generic', {
                 clientId: this.config.sasl.clientId,
                 clientSecret: this.config.sasl.clientSecret,
@@ -111,11 +137,25 @@ class KafkaClient {
           case 'confluent-platform':
             // Confluent Platform can use various mechanisms
             kafkaConfig.ssl = true; // Usually requires SSL
-            kafkaConfig.sasl = {
-              mechanism: mechanism,
-              username: this.config.sasl.username,
-              password: this.config.sasl.password
-            };
+            if (mechanism === 'oauthbearer' && useOIDC) {
+              const oidcProvider = await createOIDCProvider('oidc', {
+                ...this.config.sasl,
+                validateToken: this.config.sasl.validateToken
+              });
+              
+              kafkaConfig.sasl = {
+                mechanism: 'oauthbearer',
+                oauthBearerProvider: async () => {
+                  return await oidcProvider.getToken();
+                }
+              };
+            } else {
+              kafkaConfig.sasl = {
+                mechanism: mechanism,
+                username: this.config.sasl.username,
+                password: this.config.sasl.password
+              };
+            }
             break;
 
           case 'redpanda':
@@ -123,25 +163,42 @@ class KafkaClient {
             if (this.config.ssl !== false) {
               kafkaConfig.ssl = true; // Default to SSL for Redpanda
             }
-            kafkaConfig.sasl = {
-              mechanism: mechanism,
-              username: this.config.sasl.username,
-              password: this.config.sasl.password
-            };
+            if (mechanism === 'oauthbearer' && useOIDC) {
+              const oidcProvider = await createOIDCProvider('oidc', {
+                ...this.config.sasl,
+                validateToken: this.config.sasl.validateToken
+              });
+              
+              kafkaConfig.sasl = {
+                mechanism: 'oauthbearer',
+                oauthBearerProvider: async () => {
+                  return await oidcProvider.getToken();
+                }
+              };
+            } else {
+              kafkaConfig.sasl = {
+                mechanism: mechanism,
+                username: this.config.sasl.username,
+                password: this.config.sasl.password
+              };
+            }
             break;
 
           case 'azure':
+          case 'azure-ad':
           case 'azure-event-hubs':
             // Azure Event Hubs with OAuth
-            console.log('🔐 Using Azure AD OAuth authentication...');
+            console.log('🔐 Using Azure AD OIDC authentication...');
             kafkaConfig.ssl = true; // Azure requires SSL
             
             if (mechanism === 'oauthbearer') {
-              const azureProvider = createOAuthProvider('azure-ad', {
+              const azureProvider = await createOIDCProvider('azure-ad', {
                 tenantId: this.config.sasl.tenantId,
                 clientId: this.config.sasl.clientId,
                 clientSecret: this.config.sasl.clientSecret,
-                scope: this.config.sasl.scope || `${this.config.sasl.clientId}/.default`
+                scope: this.config.sasl.scope || `${this.config.sasl.clientId}/.default`,
+                discoveryUrl: this.config.sasl.discoveryUrl,
+                validateToken: this.config.sasl.validateToken
               });
               
               kafkaConfig.sasl = {
@@ -161,17 +218,20 @@ class KafkaClient {
             break;
 
           case 'keycloak':
-            // Keycloak OAuth authentication
-            console.log('🔐 Using Keycloak OAuth authentication...');
+            // Keycloak OIDC authentication
+            console.log('🔐 Using Keycloak OIDC authentication...');
             kafkaConfig.ssl = this.config.ssl !== false; // SSL recommended
             
             if (mechanism === 'oauthbearer') {
-              const keycloakProvider = createOAuthProvider('keycloak', {
+              const keycloakProvider = await createOIDCProvider('keycloak', {
                 keycloakUrl: this.config.sasl.keycloakUrl,
                 realm: this.config.sasl.realm,
                 clientId: this.config.sasl.clientId,
                 clientSecret: this.config.sasl.clientSecret,
-                scope: this.config.sasl.scope
+                scope: this.config.sasl.scope,
+                discoveryUrl: this.config.sasl.discoveryUrl,
+                validateToken: this.config.sasl.validateToken,
+                grantType: this.config.sasl.grantType
               });
               
               kafkaConfig.sasl = {
@@ -184,17 +244,19 @@ class KafkaClient {
             break;
 
           case 'okta':
-            // Okta OAuth authentication
-            console.log('🔐 Using Okta OAuth authentication...');
+            // Okta OIDC authentication
+            console.log('🔐 Using Okta OIDC authentication...');
             kafkaConfig.ssl = true; // SSL required for OAuth
             
             if (mechanism === 'oauthbearer') {
-              const oktaProvider = createOAuthProvider('okta', {
+              const oktaProvider = await createOIDCProvider('okta', {
                 domain: this.config.sasl.domain,
                 clientId: this.config.sasl.clientId,
                 clientSecret: this.config.sasl.clientSecret,
                 authorizationServerId: this.config.sasl.authorizationServerId,
-                scope: this.config.sasl.scope
+                scope: this.config.sasl.scope,
+                discoveryUrl: this.config.sasl.discoveryUrl,
+                validateToken: this.config.sasl.validateToken
               });
               
               kafkaConfig.sasl = {
@@ -206,25 +268,70 @@ class KafkaClient {
             }
             break;
 
-          case 'custom-oauth':
-            // Generic OAuth provider
-            console.log('🔐 Using custom OAuth authentication...');
-            kafkaConfig.ssl = this.config.ssl !== false;
+          case 'auth0':
+            // Auth0 OIDC authentication
+            console.log('🔐 Using Auth0 OIDC authentication...');
+            kafkaConfig.ssl = true; // SSL required for OAuth
             
             if (mechanism === 'oauthbearer') {
-              const customProvider = createOAuthProvider('generic', {
+              const auth0Provider = await createOIDCProvider('auth0', {
+                domain: this.config.sasl.domain,
                 clientId: this.config.sasl.clientId,
                 clientSecret: this.config.sasl.clientSecret,
-                tokenHost: this.config.sasl.tokenHost,
-                tokenPath: this.config.sasl.tokenPath,
+                audience: this.config.sasl.audience,
                 scope: this.config.sasl.scope,
-                audience: this.config.sasl.audience
+                discoveryUrl: this.config.sasl.discoveryUrl,
+                validateToken: this.config.sasl.validateToken
               });
               
               kafkaConfig.sasl = {
                 mechanism: 'oauthbearer',
                 oauthBearerProvider: async () => {
-                  return await customProvider.getToken();
+                  return await auth0Provider.getToken();
+                }
+              };
+            }
+            break;
+
+          case 'google':
+            // Google OIDC authentication
+            console.log('🔐 Using Google OIDC authentication...');
+            kafkaConfig.ssl = true; // SSL required for OAuth
+            
+            if (mechanism === 'oauthbearer') {
+              const googleProvider = await createOIDCProvider('google', {
+                clientId: this.config.sasl.clientId,
+                clientSecret: this.config.sasl.clientSecret,
+                scope: this.config.sasl.scope,
+                discoveryUrl: this.config.sasl.discoveryUrl,
+                validateToken: this.config.sasl.validateToken
+              });
+              
+              kafkaConfig.sasl = {
+                mechanism: 'oauthbearer',
+                oauthBearerProvider: async () => {
+                  return await googleProvider.getToken();
+                }
+              };
+            }
+            break;
+
+          case 'oidc':
+          case 'custom-oauth':
+            // Generic OIDC provider
+            console.log('🔐 Using generic OIDC authentication...');
+            kafkaConfig.ssl = this.config.ssl !== false;
+            
+            if (mechanism === 'oauthbearer') {
+              const oidcProvider = await createOIDCProvider('oidc', {
+                ...this.config.sasl,
+                validateToken: this.config.sasl.validateToken
+              });
+              
+              kafkaConfig.sasl = {
+                mechanism: 'oauthbearer',
+                oauthBearerProvider: async () => {
+                  return await oidcProvider.getToken();
                 }
               };
             }
@@ -236,11 +343,27 @@ class KafkaClient {
             if (this.config.ssl !== false) {
               kafkaConfig.ssl = true; // Default to SSL for security
             }
-            kafkaConfig.sasl = {
-              mechanism: mechanism,
-              username: this.config.sasl.username,
-              password: this.config.sasl.password
-            };
+            
+            if (mechanism === 'oauthbearer' && useOIDC) {
+              // Generic OIDC for Apache Kafka
+              const oidcProvider = await createOIDCProvider('oidc', {
+                ...this.config.sasl,
+                validateToken: this.config.sasl.validateToken
+              });
+              
+              kafkaConfig.sasl = {
+                mechanism: 'oauthbearer',
+                oauthBearerProvider: async () => {
+                  return await oidcProvider.getToken();
+                }
+              };
+            } else {
+              kafkaConfig.sasl = {
+                mechanism: mechanism,
+                username: this.config.sasl.username,
+                password: this.config.sasl.password
+              };
+            }
             break;
         }
       } else if (this.config.vendor === 'aws-msk') {
@@ -795,4 +918,4 @@ class KafkaClient {
   }
 }
 
-module.exports = { KafkaClient }; 
+module.exports = { KafkaClient };
