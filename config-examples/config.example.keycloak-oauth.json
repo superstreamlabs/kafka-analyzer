@@ -1,0 +1,23 @@
+{
+  "kafka": {
+    "brokers": ["kafka1.example.com:9093", "kafka2.example.com:9093"],
+    "clientId": "superstream-analyzer",
+    "vendor": "keycloak",
+    "useSasl": true,
+    "sasl": {
+      "mechanism": "oauthbearer",
+      "keycloakUrl": "https://keycloak.example.com",
+      "realm": "kafka-realm",
+      "clientId": "kafka-client",
+      "clientSecret": "your-client-secret",
+      "scope": "openid"
+    }
+  },
+  "file": {
+    "outputDir": "./kafka-analysis",
+    "formats": ["html"],
+    "includeMetadata": true,
+    "includeTimestamp": true
+  },
+  "email": "user@example.com"
+}
