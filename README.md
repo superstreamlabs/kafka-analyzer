@@ -255,15 +255,6 @@ The full list is under the `./config-examples/` folder:
 }
 ```
 
-### Email Collection
-
-The tool collects your email address to generate comprehensive report files. This is optional:
-
-- **Interactive Mode**: You'll be prompted for your email address
-- **Config File Mode**: Add an `"email"` field to your configuration file
-- **Skip Email**: If no email is provided, the analysis will run but no file-based output will be generated
-- **Privacy**: Your email is used only for report generation and is stored securely
-
 ## 🔧 Command Line Options
 
 | Option | Description | Default |
@@ -395,55 +386,6 @@ The tool performs comprehensive health checks on your Kafka cluster to identify 
 - ⚠️ **Warning**: Configuration could be improved for better performance/security
 - ❌ **Failed**: Critical issue that should be addressed
 - ℹ️ **Info**: Informational message with recommendations
-
-## 📊 Analytics & Location Tracking
-
-The SuperStream Kafka Analyzer includes optional analytics capabilities to help improve the tool and understand usage patterns. All analytics are anonymous and respect user privacy.
-
-### Analytics Features
-- **Usage Tracking**: Anonymous tracking of app usage, features, and errors
-- **Location Tracking**: IP-based geolocation for regional usage insights
-- **Performance Metrics**: Analysis completion times and success rates
-- **Vendor Analytics**: Usage patterns across different Kafka vendors
-- **Health Check Analytics**: Success/failure rates of health checks
-
-### Location Data Collected
-- **Country**: User's country (e.g., "United States")
-- **Country Code**: ISO country code (e.g., "US")
-- **Region**: State/province (e.g., "California")
-- **City**: City name (e.g., "San Francisco")
-- **Coordinates**: Latitude and longitude (when available)
-- **Timezone**: User's timezone (e.g., "America/Los_Angeles")
-
-### Privacy & Control
-- **Opt-out**: Set `SUPERSTREAM_ANALYTICS=false` environment variable to disable
-- **Anonymous**: No personal information is collected
-- **Cached**: Location data is cached for 24 hours to reduce API calls
-- **Secure**: All data is transmitted over HTTPS to Supabase
-
-### Location Tracking Methods
-```javascript
-// Manual location update
-await analytics.trackLocationUpdate();
-
-// Location-based event tracking
-await analytics.trackLocationBasedEvent('custom_event', {
-  feature: 'health_checks',
-  vendor: 'aws-msk'
-}, true); // Include detailed location
-
-// Get current location info
-const locationInfo = analytics.getCurrentLocation();
-const isCached = analytics.isLocationCached();
-```
-
-### Analytics Events Tracked
-- `app_start`: Application startup with vendor and mode
-- `analysis_complete`: Successful analysis completion
-- `health_checks`: Health check results and status
-- `error`: Error tracking with type and vendor
-- `location_update`: Location data refresh
-- `feature_usage`: Feature usage patterns
 
 ## 🔍 Validation Process
 
@@ -635,6 +577,7 @@ Each check provides a clear status (✅ Pass, ⚠️ Warning, ❌ Failed, ℹ️
 - **No Data Shared:** All analysis and health checks are performed locally on your machine. No Kafka data, credentials, or cluster information is ever sent to any external server.
 - **Local-Only:** The tool does not transmit, store, or share your Kafka messages, topic data, or configuration outside your environment.
 - **Optional Analytics:** Anonymous usage analytics (such as error events and feature usage) are sent only if enabled, and never include sensitive Kafka data. You can disable analytics by setting `SUPERSTREAM_ANALYTICS=false`.
+- **Email collection:** We're collecting email addresses to help the Superstream team better understand the types of companies using our tool. This insight will guide us in shaping a commercial version that meets real needs. While we're deeply committed to supporting the community, gaining even basic marketing insights is essential for us to justify the time and resources required to sustain and grow this project. Your email address will never be shared, and we don’t believe in cold emails or unsolicited marketing. We only reach out if you’ve clearly opted in or asked.
 
 Your security and privacy are our top priority. Everything runs locally and securely by default.
 
