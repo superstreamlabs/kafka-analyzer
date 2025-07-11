@@ -1,0 +1,28 @@
+{
+  "kafka": {
+    "brokers": ["kafka1.example.com:9093", "kafka2.example.com:9093"],
+    "clientId": "superstream-analyzer",
+    "vendor": "oidc",
+    "useSasl": true,
+    "sasl": {
+      "mechanism": "oauthbearer",
+      "discoveryUrl": "https://auth.example.com/.well-known/openid-configuration",
+      "clientId": "your-client-id",
+      "clientSecret": "your-client-secret",
+      "scope": "openid kafka:read kafka:write",
+      "audience": "https://kafka.example.com",
+      "grantType": "client_credentials",
+      "validateToken": true,
+      "customParams": {
+        "resource": "https://kafka.example.com"
+      }
+    }
+  },
+  "file": {
+    "outputDir": "./kafka-analysis",
+    "formats": ["html"],
+    "includeMetadata": true,
+    "includeTimestamp": true
+  },
+  "email": "user@example.com"
+}

@@ -37,7 +37,7 @@ Made with ❤️ by the [Superstream](https://superstream.ai) Team
 - **Interactive CLI Interface** - User-friendly prompts for configuration
 - **Configuration File Support** - Load settings from JSON config files
 - **Multi-Layer Validation** - Comprehensive connection and security testing
-- **Security Protocol Support** - PLAINTEXT, SSL/TLS, SASL authentication
+- **Security Protocol Support** - PLAINTEXT, SSL/TLS, SASL, and OIDC authentication
 - **Multiple Output Formats** - JSON, CSV, HTML, and TXT reports
 - **Real-time Progress** - Visual feedback during analysis
 - **Error Handling** - Detailed troubleshooting information
@@ -87,6 +87,12 @@ The full list is under the `./config-examples/` folder:
 - [Confluent Platform](config-examples/config.example.confluent-platform.json) - Confluent Platform setup
 - [Aiven Kafka](config-examples/config.example.aiven-kafka.json) - Aiven Kafka setup
 - [Redpanda](config-examples/config.example.redpanda.json) - Redpanda setup
+- [OIDC Authentication](config-examples/config.example.oidc.json) - OpenID Connect authentication
+- [Azure AD OAuth](config-examples/config.example.azure-ad-oauth.json) - Azure Active Directory
+- [Keycloak OAuth](config-examples/config.example.keycloak-oauth.json) - Keycloak OIDC
+- [Okta OAuth](config-examples/config.example.okta-oauth.json) - Okta OIDC
+- [Auth0 OIDC](config-examples/config.example.auth0-oidc.json) - Auth0 authentication
+- [Generic OAuth](config-examples/config.example.generic-oauth.json) - Generic OAuth provider
 - [With Timestamp](config-examples/config.example.with-timestamp.json) - Include timestamp in filenames
 - [Without Timestamp](config-examples/config.example.without-timestamp.json) - No timestamp in filenames
 
@@ -276,6 +282,44 @@ npx superstream-kafka-analyzer
 npx superstream-kafka-analyzer
 # Configure SASL mechanism and credentials when prompted
 ```
+
+### OIDC Authentication (OpenID Connect)
+The analyzer supports modern OIDC authentication with any OIDC-compliant identity provider including Azure AD, Keycloak, Okta, Auth0, and others.
+
+```bash
+# With OIDC authentication
+npx superstream-kafka-analyzer --config config-oidc.json
+```
+
+**Key Features:**
+- **Auto-discovery**: Automatically discovers OIDC endpoints using well-known discovery documents
+- **Token validation**: Optional JWT token validation using JWKS
+- **Multiple grant types**: Support for `client_credentials`, `password`, and `authorization_code` flows
+- **Token caching**: Automatic token caching to reduce authentication overhead
+- **Vendor-specific presets**: Built-in configurations for popular providers
+
+**Quick Example:**
+```json
+{
+  "kafka": {
+    "brokers": ["kafka.example.com:9093"],
+    "vendor": "oidc",
+    "useSasl": true,
+    "sasl": {
+      "mechanism": "oauthbearer",
+      "discoveryUrl": "https://auth.example.com/.well-known/openid-configuration",
+      "clientId": "your-client-id",
+      "clientSecret": "your-client-secret",
+      "scope": "openid kafka:read",
+      "grantType": "client_credentials"
+    }
+  }
+}
+```
+
+📚 **For detailed OIDC setup instructions, see:**
+- **[OIDC Authentication Guide](config-examples/OIDC-AUTH-GUIDE.md)** - Complete setup guide with examples for all major providers
+- **[Configuration Examples](config-examples/README.md)** - Vendor-specific configuration templates
 
 ## 📊 Analysis Report
 

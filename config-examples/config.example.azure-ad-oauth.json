@@ -1,0 +1,25 @@
+{
+  "kafka": {
+    "brokers": ["your-kafka-broker.servicebus.windows.net:9093"],
+    "clientId": "superstream-analyzer",
+    "vendor": "azure-ad",
+    "useSasl": true,
+    "sasl": {
+      "mechanism": "oauthbearer",
+      "tenantId": "your-tenant-id",
+      "clientId": "your-client-id",
+      "clientSecret": "your-client-secret",
+      "scope": "your-client-id/.default",
+      "grantType": "client_credentials",
+      "validateToken": true,
+      "_comment": "Discovery URL is automatically generated for Azure AD using the tenant ID"
+    }
+  },
+  "file": {
+    "outputDir": "./kafka-analysis",
+    "formats": ["html"],
+    "includeMetadata": true,
+    "includeTimestamp": true
+  },
+  "email": "user@example.com"
+}

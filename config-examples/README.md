@@ -2,6 +2,16 @@
 
 This directory contains configuration examples for different Kafka vendors. Each vendor has specific authentication requirements and SSL settings.
 
+## 🔐 Authentication Methods Supported
+
+- **PLAINTEXT** - No authentication (development only)
+- **SASL/PLAIN** - Username/password authentication
+- **SASL/SCRAM** - Secure password authentication
+- **AWS MSK IAM** - AWS Identity and Access Management
+- **OIDC/OAuth 2.0** - Modern token-based authentication
+
+📚 **For detailed OIDC setup, see [OIDC-AUTH-GUIDE.md](OIDC-AUTH-GUIDE.md)**
+
 ## Vendor-Specific Authentication Requirements
 
 ### AWS MSK (Amazon Managed Streaming for Apache Kafka)
@@ -168,6 +178,143 @@ This directory contains configuration examples for different Kafka vendors. Each
 }
 ```
 
+## OIDC Authentication Examples
+
+### Generic OIDC Provider
+
+**Basic OIDC Configuration:**
+```json
+{
+  "kafka": {
+    "brokers": ["kafka.example.com:9093"],
+    "clientId": "superstream-analyzer",
+    "vendor": "oidc",
+    "useSasl": true,
+    "sasl": {
+      "mechanism": "oauthbearer",
+      "discoveryUrl": "https://auth.example.com/.well-known/openid-configuration",
+      "clientId": "kafka-client",
+      "clientSecret": "your-client-secret",
+      "scope": "openid kafka:read kafka:write",
+      "grantType": "client_credentials"
+    }
+  },
+  "file": {
+    "outputDir": "./kafka-analysis",
+    "formats": ["json", "csv", "html"],
+    "includeMetadata": true
+  }
+}
+```
+
+### Azure Active Directory
+
+**Azure AD OIDC:**
+```json
+{
+  "kafka": {
+    "brokers": ["your-kafka-broker.servicebus.windows.net:9093"],
+    "clientId": "superstream-analyzer",
+    "vendor": "azure-ad",
+    "useSasl": true,
+    "sasl": {
+      "mechanism": "oauthbearer",
+      "tenantId": "your-tenant-id",
+      "clientId": "your-client-id",
+      "clientSecret": "your-client-secret",
+      "scope": "your-client-id/.default",
+      "validateToken": true
+    }
+  },
+  "file": {
+    "outputDir": "./kafka-analysis",
+    "formats": ["json", "csv", "html"],
+    "includeMetadata": true
+  }
+}
+```
+
+### Keycloak
+
+**Keycloak OIDC:**
+```json
+{
+  "kafka": {
+    "brokers": ["kafka.example.com:9093"],
+    "clientId": "superstream-analyzer",
+    "vendor": "keycloak",
+    "useSasl": true,
+    "sasl": {
+      "mechanism": "oauthbearer",
+      "keycloakUrl": "https://keycloak.example.com",
+      "realm": "kafka-realm",
+      "clientId": "kafka-client",
+      "clientSecret": "your-client-secret",
+      "scope": "openid kafka-access"
+    }
+  },
+  "file": {
+    "outputDir": "./kafka-analysis",
+    "formats": ["json", "csv", "html"],
+    "includeMetadata": true
+  }
+}
+```
+
+### Okta
+
+**Okta OIDC:**
+```json
+{
+  "kafka": {
+    "brokers": ["kafka.example.com:9093"],
+    "clientId": "superstream-analyzer",
+    "vendor": "okta",
+    "useSasl": true,
+    "sasl": {
+      "mechanism": "oauthbearer",
+      "domain": "your-domain.okta.com",
+      "clientId": "your-client-id",
+      "clientSecret": "your-client-secret",
+      "authorizationServerId": "default",
+      "scope": "openid kafka:access"
+    }
+  },
+  "file": {
+    "outputDir": "./kafka-analysis",
+    "formats": ["json", "csv", "html"],
+    "includeMetadata": true
+  }
+}
+```
+
+### Auth0
+
+**Auth0 OIDC:**
+```json
+{
+  "kafka": {
+    "brokers": ["kafka.example.com:9093"],
+    "clientId": "superstream-analyzer",
+    "vendor": "auth0",
+    "useSasl": true,
+    "sasl": {
+      "mechanism": "oauthbearer",
+      "domain": "your-tenant.auth0.com",
+      "clientId": "your-client-id",
+      "clientSecret": "your-client-secret",
+      "audience": "https://kafka.example.com/api",
+      "scope": "openid profile kafka:read kafka:write"
+    }
+  },
+  "file": {
+    "outputDir": "./kafka-analysis",
+    "formats": ["json", "csv", "html"],
+    "includeMetadata": true
+  }
+}
+```
+
 ## Important Notes
 
 1. **SSL Requirements:**
@@ -177,18 +324,28 @@ This directory contains configuration examples for different Kafka vendors. Each
    - Confluent Platform: Usually requires SSL
    - Redpanda: Configurable, defaults to SSL
    - Apache Kafka: Configurable, defaults to SSL for security
+   - OIDC: Always requires SSL (port 9093)
 
 2. **SASL Mechanisms:**
    - AWS MSK IAM: `oauthbearer` (uses AWS credentials)
    - AWS MSK SCRAM: `scram-sha-512`
    - Confluent Cloud: `plain`
    - Aiven: `scram-sha-256`
+   - OIDC: `oauthbearer` (uses OAuth 2.0 tokens)
    - Others: Configurable (`plain`, `scram-sha-256`, `scram-sha-512`)
 
 3. **Port Requirements:**
    - AWS MSK IAM: Port 9198
    - AWS MSK SCRAM: Port 9096
+   - OIDC: Port 9093 (SASL_SSL)
    - Others: Usually port 9092 (SSL) or 9093 (SASL_PLAINTEXT)
+
+4. **OIDC-Specific Notes:**
+   - Auto-discovery: Most providers support `.well-known/openid-configuration`
+   - Token validation: Enable `validateToken` for enhanced security
+   - Grant types: `client_credentials` is recommended for Kafka clients
+   - Scopes: Configure appropriate scopes for Kafka operations
+   - Caching: Tokens are automatically cached to improve performance
 
 4. **File Output Configuration:**
    - `outputDir`: Directory where output files will be saved
@@ -276,6 +433,42 @@ npx superstream-kafka-analyzer
 - **Port**: 9092
 - **Best for**: Production Apache Kafka clusters with secure authentication
 
+### 12. **Generic OIDC Authentication** (`config.example.oidc.json`)
+- **Use case**: Any Kafka cluster with OIDC authentication
+- **Authentication**: SASL_SSL with OAUTHBEARER mechanism
+- **Port**: 9093
+- **Best for**: Modern authentication with any OIDC provider
+
+### 13. **Azure Active Directory** (`config.example.azure-ad-oauth.json`)
+- **Use case**: Kafka clusters with Azure AD authentication
+- **Authentication**: SASL_SSL with OAUTHBEARER mechanism
+- **Port**: 9093
+- **Best for**: Enterprise environments using Azure AD
+
+### 14. **Keycloak Authentication** (`config.example.keycloak-oauth.json`)
+- **Use case**: Kafka clusters with Keycloak authentication
+- **Authentication**: SASL_SSL with OAUTHBEARER mechanism
+- **Port**: 9093
+- **Best for**: On-premise or cloud deployments using Keycloak
+
+### 15. **Okta Authentication** (`config.example.okta-oauth.json`)
+- **Use case**: Kafka clusters with Okta authentication
+- **Authentication**: SASL_SSL with OAUTHBEARER mechanism
+- **Port**: 9093
+- **Best for**: Enterprise environments using Okta
+
+### 16. **Auth0 Authentication** (`config.example.auth0-oidc.json`)
+- **Use case**: Kafka clusters with Auth0 authentication
+- **Authentication**: SASL_SSL with OAUTHBEARER mechanism
+- **Port**: 9093
+- **Best for**: Applications using Auth0 for identity management
+
+### 17. **Generic OAuth Provider** (`config.example.generic-oauth.json`)
+- **Use case**: Any OAuth 2.0 compatible provider
+- **Authentication**: SASL_SSL with OAUTHBEARER mechanism
+- **Port**: 9093
+- **Best for**: Custom OAuth implementations
+
 ## 🚀 Quick Start
 
 1. **Copy** the appropriate example file:
@@ -301,11 +494,26 @@ npx superstream-kafka-analyzer
 | `brokers` | array | Yes | Array of broker URLs (host:port) |
 | `clientId` | string | Yes | Client identifier |
 | `useSasl` | boolean | No | Enable SASL authentication |
-| `sasl.mechanism` | string | No* | SASL mechanism |
+| `sasl.mechanism` | string | No* | SASL mechanism (plain, scram-sha-256, oauthbearer) |
 | `sasl.username` | string | No* | Username/API key |
 | `sasl.password` | string | No* | Password/API secret |
 
 *Required if `useSasl` is true
+
+### OIDC Configuration (when mechanism is `oauthbearer`)
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `sasl.discoveryUrl` | string | No | OIDC discovery endpoint URL |
+| `sasl.clientId` | string | Yes | OAuth client ID |
+| `sasl.clientSecret` | string | Yes | OAuth client secret |
+| `sasl.scope` | string | No | OAuth scopes (default: "openid") |
+| `sasl.audience` | string | No | Token audience |
+| `sasl.grantType` | string | No | Grant type (default: "client_credentials") |
+| `sasl.validateToken` | boolean | No | Enable JWT token validation |
+| `sasl.tenantId` | string | No | Azure AD tenant ID |
+| `sasl.domain` | string | No | Okta/Auth0 domain |
+| `sasl.realm` | string | No | Keycloak realm |
+| `sasl.keycloakUrl` | string | No | Keycloak base URL |
 
 ### File Configuration
 | Field | Type | Required | Description |
@@ -382,6 +590,24 @@ npx superstream-kafka-analyzer
       "mechanism": "SCRAM-SHA-256",
       "username": "user",
       "password": "pass"
+    }
+  }
+}
+```
+
+### OIDC/OAuth 2.0 (Modern Authentication)
+```json
+{
+  "kafka": {
+    "brokers": ["kafka.example.com:9093"],
+    "useSasl": true,
+    "sasl": {
+      "mechanism": "oauthbearer",
+      "discoveryUrl": "https://auth.example.com/.well-known/openid-configuration",
+      "clientId": "kafka-client",
+      "clientSecret": "your-client-secret",
+      "scope": "openid kafka:read kafka:write",
+      "grantType": "client_credentials"
     }
   }
 }

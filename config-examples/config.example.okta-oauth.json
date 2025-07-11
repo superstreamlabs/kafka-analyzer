@@ -1,0 +1,26 @@
+{
+  "kafka": {
+    "brokers": ["kafka1.example.com:9093", "kafka2.example.com:9093"],
+    "clientId": "superstream-analyzer",
+    "vendor": "okta",
+    "useSasl": true,
+    "sasl": {
+      "mechanism": "oauthbearer",
+      "domain": "your-okta-domain.okta.com",
+      "clientId": "your-client-id",
+      "clientSecret": "your-client-secret",
+      "authorizationServerId": "default",
+      "scope": "openid kafka:access",
+      "grantType": "client_credentials",
+      "validateToken": true,
+      "_comment": "Discovery URL is automatically generated for Okta using the domain and authorization server ID"
+    }
+  },
+  "file": {
+    "outputDir": "./kafka-analysis",
+    "formats": ["html"],
+    "includeMetadata": true,
+    "includeTimestamp": true
+  },
+  "email": "user@example.com"
+}
