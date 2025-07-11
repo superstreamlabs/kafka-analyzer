@@ -46,6 +46,23 @@ class CLI {
 
       this.config = config;
       
+      // Normalize brokers/bootstrap_servers to array format
+      if (this.config.kafka) {
+        // Handle both 'bootstrap_servers' and 'brokers' fields
+        const brokers = this.config.kafka.bootstrap_servers || this.config.kafka.brokers;
+        
+        if (brokers) {
+          if (Array.isArray(brokers)) {
+            this.config.kafka.brokers = brokers;
+          } else if (typeof brokers === 'string') {
+            this.config.kafka.brokers = brokers.split(',').map(broker => broker.trim());
+          }
+          
+          // Remove bootstrap_servers field if it exists, standardize on 'brokers'
+          delete this.config.kafka.bootstrap_servers;
+        }
+      }
+      
       // Add email if not present in config file
       if (!this.config.email) {
         this.config.email = '';
@@ -261,6 +278,10 @@ class CLI {
     // Build kafka config
     this.config.kafka = {
       ...kafkaAnswers,
+      // Convert brokers string to array
+      brokers: Array.isArray(kafkaAnswers.brokers) 
+        ? kafkaAnswers.brokers 
+        : kafkaAnswers.brokers.split(',').map(broker => broker.trim()),
       vendor: vendorAnswer.vendor,
       useSasl: !!saslConfig,
       sasl: saslConfig
@@ -321,6 +342,41 @@ class CLI {
     this.config.email = emailAnswer.email;
   }
 
+  async promptForMonitoring() {
+    console.log(chalk.yellow('\n🔍 Monitoring Options'));
+    
+    const questions = [
+      {
+        type: 'confirm',
+        name: 'startMonitoring',
+        message: 'Would you like to start continuous monitoring of your Kafka cluster?',
+        default: false
+      },
+      {
+        type: 'list',
+        name: 'interval',
+        message: 'How often should we run health checks?',
+        choices: [
+          { name: 'Every 1 minute (Quick monitoring)', value: 60 },
+          { name: 'Every 5 minutes (Balanced)', value: 300 },
+          { name: 'Every 15 minutes (Light monitoring)', value: 900 },
+          { name: 'Every 30 minutes (Minimal)', value: 1800 }
+        ],
+        default: 300,
+        when: (answers) => answers.startMonitoring
+      },
+      {
+        type: 'confirm',
+        name: 'enableMetrics',
+        message: 'Enable real-time metrics collection? (Recommended)',
+        default: true,
+        when: (answers) => answers.startMonitoring
+      }
+    ];
+
+    return await inquirer.prompt(questions);
+  }
+
   async run() {
     try {
       // Track app start with location
@@ -342,17 +398,40 @@ class CLI {
           process.exit(1);
         }
         console.log(chalk.gray('Debug: Config loaded successfully, skipping prompts'));
+        
+        // Check if monitoring is enabled in config
+        if (this.config.monitoring?.enabled) {
+          console.log(chalk.blue('🔍 Monitoring enabled in configuration file'));
+          await this.startContinuousMonitoring();
+          return; // Exit early for monitoring mode
+        }
       } else {
         console.log(chalk.gray('Debug: No config file specified, using interactive mode'));
         await this.promptForConfig();
       }
 
-      // Initialize services without validation
-      console.log(chalk.yellow('\n⚠️  Validation skipped - proceeding directly to analysis'));
-      this.kafkaClient = new KafkaClient(this.config.kafka);
-      this.fileService = new FileService(this.config.file);
-
-      await this.analyzeKafka();
+      // Ask about monitoring (only in interactive mode)
+      const monitoringChoice = await this.promptForMonitoring();
+      
+      if (monitoringChoice.startMonitoring) {
+        // Update config with monitoring preferences
+        this.config.monitoring = {
+          enabled: true,
+          interval: monitoringChoice.interval,
+          metricsCollection: {
+            enabled: monitoringChoice.enableMetrics,
+            interval: Math.min(monitoringChoice.interval / 5, 60) // Metrics 5x more frequent than analysis, max 60s
+          }
+        };
+        
+        await this.startContinuousMonitoring();
+      } else {
+        // Run single analysis as before
+        console.log(chalk.yellow('\n⚠️  Validation skipped - proceeding directly to analysis'));
+        this.kafkaClient = new KafkaClient(this.config.kafka);
+        this.fileService = new FileService(this.config.file);
+        await this.analyzeKafka();
+      }
     } catch (error) {
       // Track errors with location
       await this.analytics.trackLocationBasedEvent('error', {
@@ -669,6 +748,85 @@ class CLI {
       message: `Location: ${location.city}, ${location.region}, ${location.country}`
     };
   }
+
+  async startContinuousMonitoring() {
+    console.log(chalk.blue('\n🚀 Starting Continuous Kafka Monitoring'));
+    
+    const { ContinuousMonitor } = require('./monitoring/continuous-monitor');
+    const monitor = new ContinuousMonitor(this.config);
+    
+    // Setup event handlers
+    monitor.on('started', () => {
+      console.log(chalk.green('✅ Continuous monitoring is now active'));
+    });
+    
+    monitor.on('analysis:complete', (report) => {
+      // Track successful monitoring cycles
+      this.analytics.trackEvent('monitoring_cycle_complete', {
+        vendor: this.config.kafka.vendor,
+        health_score: report.healthScore,
+        issues_count: report.analysis.issues.length
+      });
+    });
+    
+    monitor.on('analysis:error', (error) => {
+      console.error(chalk.red('🚨 Monitoring error:'), error.message);
+      this.analytics.trackError('monitoring_error', this.config.kafka.vendor);
+    });
+    
+    monitor.on('consecutive:failures', (count) => {
+      console.log(chalk.red(`🚨 ALERT: ${count} consecutive monitoring failures detected!`));
+      console.log(chalk.yellow('💡 This may indicate a serious cluster issue or connectivity problem'));
+      
+      this.analytics.trackEvent('monitoring_consecutive_failures', {
+        vendor: this.config.kafka.vendor,
+        failure_count: count
+      });
+    });
+
+    // Setup graceful shutdown
+    this.setupGracefulShutdown(monitor);
+    
+    try {
+      await monitor.start();
+      
+      // Keep the process alive
+      this.keepProcessAlive();
+      
+    } catch (error) {
+      console.error(chalk.red('❌ Failed to start monitoring:'), error.message);
+      process.exit(1);
+    }
+  }
+
+  setupGracefulShutdown(monitor) {
+    const shutdown = async (signal) => {
+      console.log(chalk.yellow(`\n📴 Received ${signal}, shutting down gracefully...`));
+      
+      try {
+        await monitor.stop();
+        console.log(chalk.green('👋 Monitoring stopped successfully'));
+        process.exit(0);
+      } catch (error) {
+        console.error(chalk.red('❌ Error during shutdown:'), error.message);
+        process.exit(1);
+      }
+    };
+
+    process.on('SIGINT', () => shutdown('SIGINT'));
+    process.on('SIGTERM', () => shutdown('SIGTERM'));
+    
+    process.on('uncaughtException', async (error) => {
+      console.error(chalk.red('❌ Uncaught Exception:'), error);
+      await shutdown('uncaughtException');
+    });
+  }
+
+  keepProcessAlive() {
+    setInterval(() => {
+      // Keep the process running for monitoring
+    }, 1000);
+  }
 }
 
 // At the top of the file, after class CLI definition
@@ -715,4 +873,4 @@ async function runCLI(options) {
   await cli.run();
 }
 
-module.exports = { CLI, runCLI }; 
+module.exports = { CLI, runCLI };
