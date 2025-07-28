@@ -1,6 +1,6 @@
 {
   "name": "superstream-kafka-analyzer",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "description": "Interactive utility to analyze Kafka clusters health and configuration",
   "main": "src/cli.js",
   "bin": {
