@@ -189,7 +189,7 @@ The full list is under the `./config-examples/` folder:
 ```json
 {
   "kafka": {
-    "bootstrap_servers": ["pkc-xxxxx.region.cloud:9092"],
+    "brokers": ["pkc-xxxxx.region.cloud:9092"],
     "clientId": "superstream-analyzer",
     "vendor": "confluent-cloud",
     "useSasl": true,
@@ -208,6 +208,8 @@ The full list is under the `./config-examples/` folder:
   "email": "user@example.com"
 }
 ```
+
+> **Note**: Confluent Cloud connections now use the official Confluent Cloud methodology with `@confluentinc/kafka-javascript` library, SASL_SSL protocol, and PLAIN mechanism as recommended by Confluent.
 
 **Aiven Kafka** (`config.example.aiven-kafka.json`):
 ```json

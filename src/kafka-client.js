@@ -1,10 +1,18 @@
 const { Kafka, logLevel } = require('kafkajs');
+const { Kafka: ConfluentKafka } = require('@confluentinc/kafka-javascript').KafkaJS;
 const fs = require('fs').promises;
 const chalk = require('chalk');
 const crypto = require('crypto');
 const { generateAuthToken } = require('aws-msk-iam-sasl-signer-js');
 const { createOIDCProvider } = require('./oidc-providers');
 const { createOAuthProvider } = require('./oauth-providers'); // Keep legacy support
+
+// Utility function to handle BigInt serialization
+function serializeBigInt(obj) {
+  return JSON.parse(JSON.stringify(obj, (key, value) =>
+    typeof value === 'bigint' ? value.toString() : value
+  ));
+}
 
 class KafkaClient {
   constructor(config) {
@@ -79,14 +87,49 @@ class KafkaClient {
             break;
 
           case 'confluent-cloud':
-            // Confluent Cloud uses SASL_SSL with PLAIN mechanism
-            kafkaConfig.ssl = true;
-            kafkaConfig.sasl = {
-              mechanism: 'plain', // Confluent Cloud typically uses PLAIN
-              username: this.config.sasl.username,
-              password: this.config.sasl.password
+            // Use official Confluent Cloud methodology
+            console.log('🔐 Confluent Cloud: Using official connection methodology');
+            
+            // Validate credentials
+            if (!this.config.sasl.username || !this.config.sasl.password) {
+              throw new Error('Confluent Cloud requires both API Key (username) and API Secret (password)');
+            }
+            
+            console.log(`🔑 Username (API Key): ${this.config.sasl.username ? '***' + this.config.sasl.username.slice(-4) : 'NOT SET'}`);
+            console.log(`🔑 Password (API Secret): ${this.config.sasl.password ? '***' + this.config.sasl.password.slice(-4) : 'NOT SET'}`);
+            console.log(`🌐 Brokers: ${JSON.stringify(this.config.brokers)}`);
+            
+            // Use official Confluent Cloud configuration format
+            const confluentConfig = {
+              'bootstrap.servers': this.config.brokers.join(','),
+              'security.protocol': 'SASL_SSL',
+              'sasl.mechanisms': 'PLAIN',
+              'sasl.username': this.config.sasl.username,
+              'sasl.password': this.config.sasl.password,
+              'session.timeout.ms': 45000,
+              'client.id': 'superstream-analyzer'
             };
-            break;
+            
+            console.log('🚀 Using official Confluent Cloud configuration:');
+            console.log(`   Security Protocol: SASL_SSL`);
+            console.log(`   SASL Mechanism: PLAIN`);
+            console.log(`   Session Timeout: 45000ms`);
+            console.log(`   Client ID: superstream-analyzer`);
+            
+            // Create Confluent Kafka client
+            this.confluentKafka = new ConfluentKafka();
+            this.admin = this.confluentKafka.admin(confluentConfig);
+            
+            console.log('💡 If authentication fails, try:');
+            console.log('   1. Verify API Key/Secret are correct');
+            console.log('   2. Check API Key permissions (kafka-cluster:read, describe)');
+            console.log('   3. Ensure cluster is active and broker URL is correct');
+            console.log('   4. Try regenerating API Key/Secret in Confluent Cloud console');
+            
+            // Connect using official method
+            await this.admin.connect();
+            console.log('✅ Connected to Confluent Cloud successfully using official methodology');
+            return true;
 
           case 'aiven':
             // Aiven uses SASL_SSL with SCRAM-SHA-256 or OAuth
@@ -399,22 +442,40 @@ class KafkaClient {
       await this.admin.disconnect();
       console.log('Disconnected from Kafka cluster');
     }
+    if (this.confluentKafka) {
+      // Confluent Kafka client cleanup if needed
+      this.confluentKafka = null;
+    }
   }
 
   async getTopics() {
     try {
       // Get all topic metadata at once
       const metadata = await this.admin.fetchTopicMetadata();
-      console.log(`📊 Found ${metadata.topics.length} topics in cluster`);
+      
+      // Handle different metadata structures for different clients
+      let topics = [];
+      if (metadata.topics && Array.isArray(metadata.topics)) {
+        topics = metadata.topics;
+      } else if (metadata && Array.isArray(metadata)) {
+        topics = metadata;
+      } else {
+        console.warn('⚠️  Unexpected metadata structure:', JSON.stringify(metadata, null, 2));
+        topics = [];
+      }
+      
+      console.log(`📊 Found ${topics.length} topics in cluster`);
       
       // Debug: Log the first topic structure if available
-      if (metadata.topics.length > 0) {
-        console.log('🔍 Debug: First topic structure:', JSON.stringify(metadata.topics[0], null, 2));
+      if (topics.length > 0) {
+        // Handle BigInt serialization for debugging
+        const debugTopic = serializeBigInt(topics[0]);
+        console.log('🔍 Debug: First topic structure:', JSON.stringify(debugTopic, null, 2));
       }
       
       // Process each topic
       const topicsWithMetadata = await Promise.all(
-        metadata.topics.map(async (topic) => {
+        topics.map(async (topic) => {
           try {
             const topicName = topic.name;
             
@@ -424,7 +485,13 @@ class KafkaClient {
             // Get topic configurations based on vendor
             let configs = {};
             try {
-              configs = await this.getTopicConfigsByVendor(topicName);
+              if (this.config.vendor === 'confluent-cloud' && this.confluentKafka) {
+                // For Confluent Cloud, we might need to handle configs differently
+                console.log(`📋 Getting configs for Confluent Cloud topic: ${topicName}`);
+                // TODO: Implement Confluent Cloud specific config fetching if needed
+              } else {
+                configs = await this.getTopicConfigsByVendor(topicName);
+              }
             } catch (configError) {
               console.warn(`Warning: Could not fetch configs for topic ${topicName}: ${configError.message}`);
             }
@@ -438,7 +505,11 @@ class KafkaClient {
 
             // Parse topic data based on vendor
             const topicInfo = this.parseTopicDataByVendor(topicName, topic, configs, replicationFactor);
-            return topicInfo;
+            
+            // Handle BigInt serialization for the final result
+            const serializedTopicInfo = serializeBigInt(topicInfo);
+            
+            return serializedTopicInfo;
           } catch (error) {
             console.error(`❌ Error processing topic ${topic.name}:`, error.message);
             return {
@@ -464,6 +535,12 @@ class KafkaClient {
     const vendor = this.config.vendor;
     
     try {
+      // Check if admin client supports describeConfigs
+      if (!this.admin.describeConfigs) {
+        console.warn(`⚠️  Admin client does not support describeConfigs for vendor: ${vendor}`);
+        return {};
+      }
+      
       const configResponse = await this.admin.describeConfigs({
         resources: [{
           type: 2, // Topic resource type
@@ -667,6 +744,12 @@ class KafkaClient {
 
   async getConsumerGroups() {
     try {
+      // Check if admin client supports listGroups
+      if (!this.admin.listGroups) {
+        console.warn(`⚠️  Admin client does not support listGroups for vendor: ${this.config.vendor}`);
+        return [];
+      }
+      
       const groups = await this.admin.listGroups();
       const groupDetails = await Promise.all(
         groups.groups.map(async (group) => {
@@ -688,7 +771,10 @@ class KafkaClient {
           }
         })
       );
-      return groupDetails;
+      // Handle BigInt serialization for consumer groups
+      const serializedGroupDetails = serializeBigInt(groupDetails);
+      
+      return serializedGroupDetails;
     } catch (error) {
       console.error('❌ Failed to fetch consumer groups:', error.message);
       throw error;
@@ -697,20 +783,44 @@ class KafkaClient {
 
   async getClusterInfo() {
     try {
+      // Check if admin client supports describeCluster
+      if (!this.admin.describeCluster) {
+        console.warn(`⚠️  Admin client does not support describeCluster for vendor: ${this.config.vendor}`);
+        return {
+          clusterId: 'unknown',
+          controller: null,
+          brokers: [],
+          topics: 0
+        };
+      }
+      
       const metadata = await this.admin.fetchTopicMetadata();
       const clusterInfo = await this.admin.describeCluster();
       
-      return {
-        clusterId: clusterInfo.clusterId,
+      // Handle different metadata structures
+      let topics = [];
+      if (metadata.topics && Array.isArray(metadata.topics)) {
+        topics = metadata.topics;
+      } else if (metadata && Array.isArray(metadata)) {
+        topics = metadata;
+      }
+      
+      const clusterData = {
+        clusterId: clusterInfo.clusterId || 'unknown',
         controller: clusterInfo.controller,
-        brokers: clusterInfo.brokers.map(broker => ({
+        brokers: clusterInfo.brokers ? clusterInfo.brokers.map(broker => ({
           nodeId: broker.nodeId,
           host: broker.host,
           port: broker.port,
           rack: broker.rack
-        })),
-        topics: metadata.topics.length
+        })) : [],
+        topics: topics.length
       };
+      
+      // Handle BigInt serialization for cluster info
+      const serializedClusterData = serializeBigInt(clusterData);
+      
+      return serializedClusterData;
     } catch (error) {
       console.error('❌ Failed to fetch cluster info:', error.message);
       throw error;

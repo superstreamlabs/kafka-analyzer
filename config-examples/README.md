@@ -60,16 +60,16 @@ This directory contains configuration examples for different Kafka vendors. Each
 
 ### Confluent Cloud
 
-**API Key Authentication:**
+**API Key Authentication (Single Broker URL):**
 ```json
 {
   "kafka": {
-    "brokers": ["your-cluster.confluent.cloud:9092"],
+    "brokers": ["pkc-xxxxx.us-central1.gcp.confluent.cloud:9092"],
     "clientId": "superstream-analyzer",
     "vendor": "confluent-cloud",
     "useSasl": true,
     "sasl": {
-      "mechanism": "plain",
+      "mechanism": "PLAIN",
       "username": "your-api-key",
       "password": "your-api-secret"
     }
@@ -393,9 +393,16 @@ npx superstream-kafka-analyzer
 
 ### 5. **Confluent Cloud** (`config.example.confluent-cloud.json`)
 - **Use case**: Confluent Cloud managed Kafka
-- **Authentication**: SASL_SSL with PLAIN mechanism
+- **Authentication**: SASL_SSL with PLAIN mechanism (Official methodology)
 - **Port**: 9092
 - **Best for**: Cloud-managed Kafka with Confluent
+- **Library**: Uses official `@confluentinc/kafka-javascript` library
+
+### 5a. **Confluent Cloud Properties** (`config.example.confluent-cloud.properties`)
+- **Use case**: Confluent Cloud with official properties format
+- **Authentication**: SASL_SSL with PLAIN mechanism
+- **Port**: 9092
+- **Best for**: Reference for official Confluent Cloud configuration format
 
 ### 6. **Confluent Platform** (`config.example.confluent-platform.json`)
 - **Use case**: On-premise Confluent Platform
@@ -623,9 +630,12 @@ npx superstream-kafka-analyzer
 ## 🌐 Platform-Specific Notes
 
 ### Confluent Cloud
-- Get broker URLs from your cluster overview
+- Get broker URL from your cluster overview (single endpoint)
 - Use API Key as username, API Secret as password
+- Uses official Confluent Cloud methodology with `@confluentinc/kafka-javascript` library
 - Always uses SASL_SSL with PLAIN mechanism
+- Only one broker URL is needed (not multiple endpoints)
+- Session timeout set to 45000ms as per official recommendations
 
 ### Confluent Platform
 - Standard Kafka protocol with SASL authentication

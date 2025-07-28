@@ -27,6 +27,7 @@
     "@aws-sdk/client-kafka": "^3.835.0",
     "@aws-sdk/credential-providers": "^3.835.0",
     "@aws-sdk/signature-v4": "^3.370.0",
+    "@confluentinc/kafka-javascript": "^1.0.0",
     "aws-msk-iam-sasl-signer-js": "^1.0.0",
     "axios": "^1.7.2",
     "chalk": "^4.1.2",

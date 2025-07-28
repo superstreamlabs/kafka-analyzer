@@ -44,6 +44,17 @@ class CLI {
         throw new Error('Invalid config file structure. Must contain "kafka" and "file" sections.');
       }
 
+      // Handle both bootstrap_servers and brokers field names
+      if (config.kafka.bootstrap_servers && !config.kafka.brokers) {
+        config.kafka.brokers = config.kafka.bootstrap_servers;
+        delete config.kafka.bootstrap_servers;
+      }
+
+      // Ensure brokers is always an array
+      if (typeof config.kafka.brokers === 'string') {
+        config.kafka.brokers = config.kafka.brokers.split(',').map(broker => broker.trim());
+      }
+
       this.config = config;
       
       // Add email if not present in config file
@@ -84,12 +95,28 @@ class CLI {
 
     // Kafka Configuration
     console.log(chalk.yellow('\n📡 Kafka Configuration'));
+    
+    // Customize broker prompt based on vendor
+    let brokerMessage = 'Bootstrap servers (comma-separated):';
+    let brokerDefault = 'localhost:9092';
+    
+    if (vendorAnswer.vendor === 'confluent-cloud') {
+      brokerMessage = 'Confluent Cloud broker URL (single endpoint):';
+      brokerDefault = 'pkc-xxxxx.region.cloud:9092';
+    } else if (vendorAnswer.vendor === 'aws-msk') {
+      brokerMessage = 'AWS MSK broker URLs (comma-separated):';
+      brokerDefault = 'b-1.your-cluster.region.amazonaws.com:9092';
+    } else if (vendorAnswer.vendor === 'aiven') {
+      brokerMessage = 'Aiven broker URLs (comma-separated):';
+      brokerDefault = 'kafka-xxxxx.aivencloud.com:12345';
+    }
+    
     const kafkaAnswers = await inquirer.prompt([
       {
         type: 'input',
         name: 'brokers',
-        message: 'Bootstrap servers (comma-separated):',
-        default: 'localhost:9092',
+        message: brokerMessage,
+        default: brokerDefault,
         validate: (input) => {
           if (!input.trim()) return 'Bootstrap servers are required';
           return true;
@@ -154,7 +181,9 @@ class CLI {
         };
       }
     } else if (vendorAnswer.vendor === 'confluent-cloud') {
-      console.log(chalk.yellow('\n🔐 Confluent Cloud Authentication'));
+      console.log(chalk.yellow('\n🔐 Confluent Cloud Authentication (Official Methodology)'));
+      console.log(chalk.gray('Using official Confluent Cloud connection methodology with SASL_SSL and PLAIN mechanism'));
+      
       const confluentAnswers = await inquirer.prompt([
         {
           type: 'input',
@@ -176,10 +205,18 @@ class CLI {
         }
       ]);
       saslConfig = {
-        mechanism: 'plain',
+        mechanism: 'PLAIN',
         username: confluentAnswers.username,
         password: confluentAnswers.password
       };
+      
+      // Enhanced logging for Confluent Cloud credentials
+      console.log(chalk.gray('🔍 Confluent Cloud configuration:'));
+      console.log(chalk.gray(`   Security Protocol: SASL_SSL`));
+      console.log(chalk.gray(`   SASL Mechanism: PLAIN`));
+      console.log(chalk.gray(`   Session Timeout: 45000ms`));
+      console.log(chalk.gray(`   API Key: ${confluentAnswers.username ? '***' + confluentAnswers.username.slice(-4) : 'NOT SET'}`));
+      console.log(chalk.gray(`   API Secret: ${confluentAnswers.password ? '***' + confluentAnswers.password.slice(-4) : 'NOT SET'}`));
     } else if (vendorAnswer.vendor === 'aiven') {
       console.log(chalk.yellow('\n🔐 Aiven Kafka Authentication'));
       const aivenAnswers = await inquirer.prompt([
@@ -261,6 +298,7 @@ class CLI {
     // Build kafka config
     this.config.kafka = {
       ...kafkaAnswers,
+      brokers: kafkaAnswers.brokers.split(',').map(broker => broker.trim()), // Convert string to array
       vendor: vendorAnswer.vendor,
       useSasl: !!saslConfig,
       sasl: saslConfig

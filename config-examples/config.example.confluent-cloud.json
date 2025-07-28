@@ -2,6 +2,7 @@
   "kafka": {
     "brokers": ["pkc-xxxxx.us-central1.gcp.confluent.cloud:9092"],
     "clientId": "superstream-analyzer",
+    "vendor": "confluent-cloud",
     "useSasl": true,
     "sasl": {
       "mechanism": "PLAIN",
@@ -14,5 +15,6 @@
     "formats": ["json", "csv", "html", "txt"],
     "includeMetadata": true
   },
-  "email": "user@example.com"
+  "email": "user@example.com",
+  "_comment": "Confluent Cloud uses official connection methodology with SASL_SSL and PLAIN mechanism. Replace pkc-xxxxx.us-central1.gcp.confluent.cloud:9092 with your actual Confluent Cloud broker URL from your cluster overview. Use your API Key as username and API Secret as password."
 } 
