@@ -1,0 +1,116 @@
+/* Custom CSS for Kafka Dashboard */
+
+/* Global Styles */
+body {
+    font-family: 'Inter', sans-serif !important;
+    background-color: #f8f9fa !important;
+}
+
+/* Card Borders */
+.border-left-primary { 
+    border-left: 4px solid #007bff !important; 
+}
+
+.border-left-success { 
+    border-left: 4px solid #28a745 !important; 
+}
+
+.border-left-info { 
+    border-left: 4px solid #17a2b8 !important; 
+}
+
+.border-left-warning { 
+    border-left: 4px solid #ffc107 !important; 
+}
+
+.border-left-secondary { 
+    border-left: 4px solid #6c757d !important; 
+}
+
+.border-left-danger { 
+    border-left: 4px solid #dc3545 !important; 
+}
+
+/* Dashboard specific styles */
+.dashboard-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 10px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.metric-card {
+    transition: transform 0.2s ease-in-out;
+    border: none !important;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+}
+
+.metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.chart-card {
+    border: none !important;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+    border-radius: 10px !important;
+}
+
+/* Status indicators */
+.status-passed {
+    background-color: #d4edda !important;
+    color: #155724 !important;
+}
+
+.status-failed {
+    background-color: #f8d7da !important;
+    color: #721c24 !important;
+}
+
+.status-warning {
+    background-color: #fff3cd !important;
+    color: #856404 !important;
+}
+
+.status-info {
+    background-color: #d1ecf1 !important;
+    color: #0c5460 !important;
+}
+
+/* Loading states */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .dashboard-header {
+        padding: 1rem;
+        text-align: center;
+    }
+    
+    .metric-card {
+        margin-bottom: 1rem;
+    }
+}
+
+/* Animation for updates */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+.updating {
+    animation: pulse 1s infinite;
+}
