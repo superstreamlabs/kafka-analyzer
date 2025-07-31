@@ -113,7 +113,7 @@ class FileService {
   }
 
   async generateHtmlReport(topicInfo) {
-    const templatePath = path.join(__dirname, '../templates/email-template-modern.html');
+    const templatePath = path.join(__dirname, '/templates/email-template-modern.html');
     const template = await fs.readFile(templatePath, 'utf8');
     return this.populateTemplate(template, topicInfo);
   }
@@ -304,7 +304,7 @@ class FileService {
         <div class="health-check ${statusClass}">
           <div class="check-header">
             <div class="status-icon ${statusClass}">
-              <img src="../static/icons/${iconFile}" alt="${statusText}" />
+              <img src="${__dirname}/static/icons/${iconFile}" alt="${statusText}" />
             </div>
             <h3 class="check-title">${check.name}</h3>
             <span class="status-badge ${statusClass}">${statusText}</span>
