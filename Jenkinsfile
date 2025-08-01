@@ -44,7 +44,7 @@ pipeline {
                 sh """
                     curl -L https://github.com/cli/cli/releases/download/v2.40.0/gh_2.40.0_linux_amd64.tar.gz -o gh.tar.gz 
                     tar -xvf gh.tar.gz
-                    mv gh_2.40.0_linux_amd64/bin/gh /usr/local/bin 
+                    sudo mv gh_2.40.0_linux_amd64/bin/gh /usr/local/bin 
                     rm -rf gh_2.40.0_linux_amd64 gh.tar.gz
                 """
                 withCredentials([sshUserPrivateKey(keyFileVariable:'check',credentialsId: 'main-github')]) {
