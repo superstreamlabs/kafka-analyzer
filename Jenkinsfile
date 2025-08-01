@@ -1,3 +1,5 @@
+@Library('shared-library') _
+
 pipeline {
 
     agent {
@@ -26,21 +28,18 @@ pipeline {
             }
         }
 
-        // stage('Publish') {
-        //     steps {
-        //         withCredentials([string(credentialsId: 'npm-token', variable: 'NPM_TOKEN')]) {
-        //             sh '''
-        //                 echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/.npmrc
-        //                 npm publish
-        //             '''
-        //         }
-        //     }
-        // }
+        stage('Publish') {
+            steps {
+                withCredentials([string(credentialsId: 'npm-token', variable: 'NPM_TOKEN')]) {
+                    sh '''
+                        echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/.npmrc
+                        npm publish
+                    '''
+                }
+            }
+        }
 
-        stage('Create Release'){
-            // when {
-            //     branch 'latest'
-            // }       
+        stage('Create Release'){      
             steps {                               
                 sh """
                     curl -L https://github.com/cli/cli/releases/download/v2.40.0/gh_2.40.0_linux_amd64.tar.gz -o gh.tar.gz 
@@ -69,11 +68,9 @@ pipeline {
             cleanWs()
         }
         success {
-            script {
-                // if (env.GIT_BRANCH == 'latest') {   
-                    sendSlackNotification('SUCCESS')         
-                    notifySuccessful()
-                // }
+            script {  
+                sendSlackNotification('SUCCESS')         
+                notifySuccessful()
             }
         }
         
