@@ -70,43 +70,20 @@ pipeline {
         success {
             script {  
                 sendSlackNotification('SUCCESS')         
-                notifySuccessful()
             }
         }
         
         failure {
             script {
-                if (env.GIT_BRANCH == 'latest') { 
-                    sendSlackNotification('FAILURE')              
-                    notifyFailed()
-                }
+                sendSlackNotification('FAILURE')              
             }            
         }
         aborted {
             script {
-                if (env.BRANCH_NAME == 'latest') {
-                    sendSlackNotification('ABORTED')
-                }
+                sendSlackNotification('ABORTED')
                 // Get the build log to check for the specific exception and retry job
                 AgentOfflineException()
             }          
         }        
     }
-}
-
-def notifySuccessful() {
-    emailext (
-        subject: "SUCCESSFUL: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
-        body: """SUCCESSFUL: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':
-        Check console output and connection attributes at ${env.BUILD_URL}""",
-        to: 'tech-leads@superstream.ai'
-    )
-}
-def notifyFailed() {
-    emailext (
-        subject: "FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]'",
-        body: """FAILED: Job '${env.JOB_NAME} [${env.BUILD_NUMBER}]':
-        Check console output at ${env.BUILD_URL}""",
-        to: 'tech-leads@superstream.ai'
-    )
 }
