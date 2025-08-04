@@ -203,6 +203,7 @@ config.production.json
 config.apache-kafka-no-auth.json
 config.aws-msk-iam.json
 test-config-confluent.json
+certs/*
 *.key
 *.pem
 *.crt

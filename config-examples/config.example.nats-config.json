@@ -1,0 +1,8 @@
+{
+  "servers": ["nats://localhost:4222"],
+  "jwt": "nats-jwt-token",
+  "nkey": "nats-nkey-seed",
+  "account": "internal",
+  "bucket": "kafka-analysis-reports",
+  "objectName": "selected-object-name"
+} 
