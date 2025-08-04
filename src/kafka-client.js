@@ -1,6 +1,7 @@
 const { Kafka, logLevel } = require('kafkajs');
 const { Kafka: ConfluentKafka } = require('@confluentinc/kafka-javascript').KafkaJS;
 const fs = require('fs').promises;
+const path = require('path');
 const chalk = require('chalk');
 const crypto = require('crypto');
 const { generateAuthToken } = require('aws-msk-iam-sasl-signer-js');
@@ -34,6 +35,11 @@ class KafkaClient {
           retries: 8
         }
       };
+
+      // If SSL keys are provided, disable SASL
+      if (this.config.ssl && (this.config.ssl.ca || this.config.ssl.cert || this.config.ssl.key)) {
+        this.config.useSasl = false;
+      } 
 
       // Handle authentication based on vendor and configuration
       if (this.config.useSasl && this.config.sasl) {
@@ -175,7 +181,11 @@ class KafkaClient {
 
           case 'aiven':
             // Aiven uses SASL_SSL with SCRAM-SHA-256 or OAuth
-            kafkaConfig.ssl = await this.buildSslConfig();
+            console.log('🔐 Aiven detected - configuring SSL with certificates...');
+            if (this.config.ssl && (this.config.ssl.ca || this.config.ssl.cert || this.config.ssl.key)) {
+              kafkaConfig.ssl = await this.buildSslConfig();
+            }
+            
             if (mechanism === 'oauthbearer' && useOIDC) {
               const oidcProvider = await createOIDCProvider('oidc', {
                 ...this.config.sasl,
@@ -425,7 +435,9 @@ class KafkaClient {
           case 'apache':
           default:
             // Apache Kafka - SSL depends on configuration
-            if (this.config.ssl !== false) {
+            if (this.config.ssl && (this.config.ssl.ca || this.config.ssl.cert || this.config.ssl.key)) {
+              kafkaConfig.ssl = await this.buildSslConfig();
+            } else if (this.config.ssl !== false) {
               kafkaConfig.ssl = true; // Default to SSL for security
             }
             
@@ -455,6 +467,10 @@ class KafkaClient {
         // AWS MSK without SASL - still needs SSL
         console.log('🔐 AWS MSK detected - enabling SSL for security');
         kafkaConfig.ssl = true;
+      } else if (this.config.ssl && (this.config.ssl.ca || this.config.ssl.cert || this.config.ssl.key)) {
+        // Any vendor with SSL certificates - use SSL authentication
+        console.log(`🔐 ${this.config.vendor} detected with SSL certificates - configuring SSL authentication...`);
+        kafkaConfig.ssl = await this.buildSslConfig();
       }
 
       this.admin = new Kafka(kafkaConfig).admin();
@@ -877,7 +893,10 @@ class KafkaClient {
     // Load certificate files if provided
     if (this.config.ssl?.ca) {
       try {
-        sslConfig.ca = await fs.readFile(this.config.ssl.ca);
+        const caPath = path.resolve(this.config.ssl.ca);
+        console.log(`🔐 Loading CA certificate from: ${caPath}`);
+        sslConfig.ca = await fs.readFile(caPath);
+        console.log('✅ CA certificate loaded successfully');
       } catch (error) {
         throw new Error(`Failed to read CA certificate file: ${error.message}`);
       }
@@ -885,7 +904,10 @@ class KafkaClient {
 
     if (this.config.ssl?.cert) {
       try {
-        sslConfig.cert = await fs.readFile(this.config.ssl.cert);
+        const certPath = path.resolve(this.config.ssl.cert);
+        console.log(`🔐 Loading client certificate from: ${certPath}`);
+        sslConfig.cert = await fs.readFile(certPath);
+        console.log('✅ Client certificate loaded successfully');
       } catch (error) {
         throw new Error(`Failed to read client certificate file: ${error.message}`);
       }
@@ -893,11 +915,21 @@ class KafkaClient {
 
     if (this.config.ssl?.key) {
       try {
-        sslConfig.key = await fs.readFile(this.config.ssl.key);
+        const keyPath = path.resolve(this.config.ssl.key);
+        console.log(`🔐 Loading client private key from: ${keyPath}`);
+        sslConfig.key = await fs.readFile(keyPath);
+        console.log('✅ Client private key loaded successfully');
       } catch (error) {
         throw new Error(`Failed to read client private key file: ${error.message}`);
       }
     }
+
+    // Log SSL configuration summary
+    console.log('🔐 SSL Configuration:');
+    console.log(`   CA Certificate: ${this.config.ssl?.ca ? 'Loaded' : 'Not provided'}`);
+    console.log(`   Client Certificate: ${this.config.ssl?.cert ? 'Loaded' : 'Not provided'}`);
+    console.log(`   Client Private Key: ${this.config.ssl?.key ? 'Loaded' : 'Not provided'}`);
+    console.log(`   Reject Unauthorized: ${sslConfig.rejectUnauthorized}`);
 
     return sslConfig;
   }
