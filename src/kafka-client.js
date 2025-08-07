@@ -51,12 +51,19 @@ class KafkaClient {
         // Vendor-specific authentication handling
         switch (vendor) {
           case 'aws-msk':
-            if (mechanism === 'oauthbearer') {
-              // AWS MSK IAM authentication
+            if (mechanism === 'AWS_MSK_IAM') {
+              // AWS MSK IAM authentication via OAuth bearer token
               console.log('🔐 Using AWS MSK IAM authentication...');
               
               const region = this.extractRegionFromBrokers();
               console.log(`🌍 Using AWS region: ${region}`);
+              
+              // Configure AWS credentials if provided in config
+              if (this.config.sasl.accessKeyId && this.config.sasl.secretAccessKey) {
+                process.env.AWS_ACCESS_KEY_ID = this.config.sasl.accessKeyId;
+                process.env.AWS_SECRET_ACCESS_KEY = this.config.sasl.secretAccessKey;
+                console.log('🔑 AWS credentials configured from config');
+              }
               
               kafkaConfig.ssl = true; // MSK with IAM requires SSL
               kafkaConfig.sasl = {
@@ -71,6 +78,41 @@ class KafkaClient {
                     };
                   } catch (tokenError) {
                     console.error('❌ Failed to generate auth token:', tokenError);
+                    console.error('💡 Make sure AWS credentials are properly configured');
+                    console.error('💡 You can set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables');
+                    throw tokenError;
+                  }
+                }
+              };
+            } else if (mechanism === 'oauthbearer') {
+              // AWS MSK IAM authentication via OAuth bearer token (alternative approach)
+              console.log('🔐 Using AWS MSK IAM authentication via OAuth bearer...');
+              
+              const region = this.extractRegionFromBrokers();
+              console.log(`🌍 Using AWS region: ${region}`);
+              
+              // Configure AWS credentials if provided in config
+              if (this.config.sasl.accessKeyId && this.config.sasl.secretAccessKey) {
+                process.env.AWS_ACCESS_KEY_ID = this.config.sasl.accessKeyId;
+                process.env.AWS_SECRET_ACCESS_KEY = this.config.sasl.secretAccessKey;
+                console.log('🔑 AWS credentials configured from config');
+              }
+              
+              kafkaConfig.ssl = true; // MSK with IAM requires SSL
+              kafkaConfig.sasl = {
+                mechanism: 'oauthbearer',
+                oauthBearerProvider: async () => {
+                  console.log('🔐 Generating IAM auth token...');
+                  try {
+                    const authTokenResponse = await generateAuthToken({ region: region });
+                    console.log('✅ Auth token generated successfully');
+                    return {
+                      value: authTokenResponse.token
+                    };
+                  } catch (tokenError) {
+                    console.error('❌ Failed to generate auth token:', tokenError);
+                    console.error('💡 Make sure AWS credentials are properly configured');
+                    console.error('💡 You can set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables');
                     throw tokenError;
                   }
                 }

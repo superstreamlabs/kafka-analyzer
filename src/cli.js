@@ -55,6 +55,39 @@ class CLI {
         config.kafka.brokers = config.kafka.brokers.split(',').map(broker => broker.trim());
       }
 
+      // Validate vendor field for authentication mechanisms
+      if (config.kafka.useSasl && config.kafka.sasl) {
+        const mechanism = config.kafka.sasl.mechanism;
+        
+        // Check for AWS MSK IAM authentication
+        if (mechanism === 'AWS_MSK_IAM') {
+          if (!config.kafka.vendor) {
+            throw new Error(
+              'Missing "vendor" field in kafka configuration. ' +
+              'For AWS MSK IAM authentication, you must specify "vendor": "aws-msk". ' +
+              'This tells the tool how to handle the AWS MSK IAM authentication properly.'
+            );
+          } else if (config.kafka.vendor !== 'aws-msk') {
+            throw new Error(
+              `Invalid vendor "${config.kafka.vendor}" for AWS MSK IAM authentication. ` +
+              'For AWS MSK IAM, the vendor must be set to "aws-msk". ' +
+              'This ensures the authentication logic works correctly.'
+            );
+          }
+        }
+        
+        // Check for other vendor-specific mechanisms
+        if (mechanism === 'oauthbearer') {
+          if (!config.kafka.vendor) {
+            throw new Error(
+              'Missing "vendor" field in kafka configuration. ' +
+              'For OAuth/OIDC authentication, you must specify the vendor (e.g., "aws-msk", "confluent-cloud", "oidc"). ' +
+              'This tells the tool which OAuth provider to use.'
+            );
+          }
+        }
+      }
+
       this.config = config;
       
       // Add email if not present in config file
@@ -66,6 +99,18 @@ class CLI {
       return true;
     } catch (error) {
       console.error(chalk.red(`❌ Failed to load config file: ${error.message}`));
+      
+      // Provide additional help for common vendor-related issues
+      if (error.message.includes('vendor')) {
+        console.log(chalk.yellow('\n💡 Configuration Help:'));
+        console.log(chalk.gray('• For AWS MSK IAM: Use "vendor": "aws-msk"'));
+        console.log(chalk.gray('• For Confluent Cloud: Use "vendor": "confluent-cloud"'));
+        console.log(chalk.gray('• For Aiven: Use "vendor": "aiven"'));
+        console.log(chalk.gray('• For Apache Kafka: Use "vendor": "apache"'));
+        console.log(chalk.gray('• For Redpanda: Use "vendor": "redpanda"'));
+        console.log(chalk.yellow('\n📖 See config-examples/ directory for complete examples.'));
+      }
+      
       return false;
     }
   }
