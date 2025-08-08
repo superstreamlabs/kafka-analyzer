@@ -70,7 +70,19 @@ npx superstream-kafka-analyzer
 ```bash
 # Using a configuration file
 npx superstream-kafka-analyzer --config config.json
+
+# Using a configuration file and uploading results to NATS
+npx superstream-kafka-analyzer --config config.json --nats-config nats-config.json
 ```
+
+### NATS Config Mode (Upload to NATS)
+
+```bash
+# Run normal analysis but upload results to NATS instead of generating files
+npx superstream-kafka-analyzer --config config.json --nats-config nats-config.json
+```
+
+This mode works like the normal configuration file mode, but instead of generating local files, it uploads the analysis results to NATS Object Store.
 
 ### Configuration File Examples
 
@@ -95,6 +107,7 @@ The full list is under the `./config-examples/` folder:
 - [Generic OAuth](config-examples/config.example.generic-oauth.json) - Generic OAuth provider
 - [With Timestamp](config-examples/config.example.with-timestamp.json) - Include timestamp in filenames
 - [Without Timestamp](config-examples/config.example.without-timestamp.json) - No timestamp in filenames
+- [NATS Config](config-examples/config.example.nats-config.json) - configuration for NATS connectivity
 
 **Basic Configuration** (`config.example.json`):
 ```json
@@ -136,6 +149,18 @@ The full list is under the `./config-examples/` folder:
     "includeTimestamp": true
   },
   "email": "user@example.com"
+}
+```
+
+**NATS Only Configuration** (`config.example.nats-config.json`):
+```json
+{
+  "servers": ["nats://localhost:4222"],
+  "jwt": "your_jwt_token_here",
+  "nkey": "your_nkey_seed_here",
+  "account": "your_account_name",
+  "bucket": "kafka-analysis-test",
+  "objectName": "analysis-result-test"
 }
 ```
 
@@ -218,14 +243,11 @@ The full list is under the `./config-examples/` folder:
     "brokers": ["kafka-xxxxx-aiven-kafka.aivencloud.com:12345"],
     "clientId": "superstream-analyzer",
     "vendor": "aiven",
-    "useSasl": true,
-    "sasl": {
-      "mechanism": "SCRAM-SHA-256",
-      "username": "avnadmin",
-      "password": "YOUR_AVNADMIN_PASSWORD"
-    },
+    "useSasl": false,
     "ssl": {
-      "ca": "./path/to/ca.pem"
+      "ca": "path/to/ca.pem",
+      "cert": "path/to/service.cert",
+      "key": "path/to/service.key"
     }
   },
   "file": {
@@ -268,6 +290,7 @@ The full list is under the `./config-examples/` folder:
 | Option | Description | Default |
 |--------|-------------|---------|
 | `--config <path>` | Path to configuration file | - |
+| `--nats-config <path>` | Path to NATS configuration file (uploads to NATS data store instead of generating files) | - |
 
 ## 🔐 Security Protocols
 
