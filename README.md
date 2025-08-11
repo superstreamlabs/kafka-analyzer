@@ -218,14 +218,11 @@ The full list is under the `./config-examples/` folder:
     "brokers": ["kafka-xxxxx-aiven-kafka.aivencloud.com:12345"],
     "clientId": "superstream-analyzer",
     "vendor": "aiven",
-    "useSasl": true,
-    "sasl": {
-      "mechanism": "SCRAM-SHA-256",
-      "username": "avnadmin",
-      "password": "YOUR_AVNADMIN_PASSWORD"
-    },
+    "useSasl": false,
     "ssl": {
-      "ca": "./path/to/ca.pem"
+      "ca": "path/to/ca.pem",
+      "cert": "path/to/service.cert",
+      "key": "path/to/service.key"
     }
   },
   "file": {

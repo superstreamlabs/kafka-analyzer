@@ -38,6 +38,7 @@
     "jsonwebtoken": "^9.0.2",
     "jwks-rsa": "^3.1.0",
     "kafkajs": "^2.2.4",
+    "nats": "^2.19.0",
     "ora": "^5.4.1",
     "simple-oauth2": "^5.1.0",
     "superstream-kafka-analyzer": "^1.0.13"
