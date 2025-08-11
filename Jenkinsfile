@@ -16,7 +16,7 @@ pipeline {
             steps {
                 script {
                     def pkgVersion = sh(script: "jq -r .version package.json", returnStdout: true).trim()
-                    env.versionTag = "v${pkgVersion}"
+                    env.versionTag = "${pkgVersion}"
                 }
             }
         }
@@ -52,13 +52,13 @@ pipeline {
                 sh """
                 GIT_SSH_COMMAND='ssh -i $check -o StrictHostKeyChecking=no' git config --global user.email "jenkins@superstream.ai"
                 GIT_SSH_COMMAND='ssh -i $check -o StrictHostKeyChecking=no' git config --global user.name "Jenkins"                
-                GIT_SSH_COMMAND='ssh -i $check -o StrictHostKeyChecking=no' git tag -a $versionTag -m "$versionTag"
-                GIT_SSH_COMMAND='ssh -i $check -o StrictHostKeyChecking=no' git push origin $versionTag
+                GIT_SSH_COMMAND='ssh -i $check -o StrictHostKeyChecking=no' git tag -a v$versionTag -m "v$versionTag"
+                GIT_SSH_COMMAND='ssh -i $check -o StrictHostKeyChecking=no' git push origin v$versionTag
                 """
                 }                
                 withCredentials([string(credentialsId: 'gh_token', variable: 'GH_TOKEN')]) {
                 sh """
-                gh release upload $versionTag superstream-kafka-analyzer-${env.versionTag}.tgz  --generate-notes
+                gh release create v$versionTag superstream-kafka-analyzer-${env.versionTag}.tgz --generate-notes
                 """
                 }                
             }
