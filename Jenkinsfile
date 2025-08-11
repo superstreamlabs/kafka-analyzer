@@ -23,6 +23,7 @@ pipeline {
 
         stage('Install dependencies') {
             steps {
+                sh 'sudo dnf install -y nodejs || true'
                 sh 'npm install'
                 sh 'npm pack'
             }
