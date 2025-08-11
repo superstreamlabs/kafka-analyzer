@@ -1,6 +1,7 @@
 const { Kafka, logLevel } = require('kafkajs');
 const { Kafka: ConfluentKafka } = require('@confluentinc/kafka-javascript').KafkaJS;
 const fs = require('fs').promises;
+const path = require('path');
 const chalk = require('chalk');
 const crypto = require('crypto');
 const { generateAuthToken } = require('aws-msk-iam-sasl-signer-js');
@@ -35,6 +36,11 @@ class KafkaClient {
         }
       };
 
+      // If SSL keys are provided, disable SASL
+      if (this.config.ssl && (this.config.ssl.ca || this.config.ssl.cert || this.config.ssl.key)) {
+        this.config.useSasl = false;
+      } 
+
       // Handle authentication based on vendor and configuration
       if (this.config.useSasl && this.config.sasl) {
         const vendor = this.config.vendor;
@@ -51,12 +57,19 @@ class KafkaClient {
         // Vendor-specific authentication handling
         switch (vendor) {
           case 'aws-msk':
-            if (mechanism === 'oauthbearer') {
-              // AWS MSK IAM authentication
+            if (mechanism === 'AWS_MSK_IAM') {
+              // AWS MSK IAM authentication via OAuth bearer token
               console.log('🔐 Using AWS MSK IAM authentication...');
               
               const region = this.extractRegionFromBrokers();
               console.log(`🌍 Using AWS region: ${region}`);
+              
+              // Configure AWS credentials if provided in config
+              if (this.config.sasl.accessKeyId && this.config.sasl.secretAccessKey) {
+                process.env.AWS_ACCESS_KEY_ID = this.config.sasl.accessKeyId;
+                process.env.AWS_SECRET_ACCESS_KEY = this.config.sasl.secretAccessKey;
+                console.log('🔑 AWS credentials configured from config');
+              }
               
               kafkaConfig.ssl = true; // MSK with IAM requires SSL
               kafkaConfig.sasl = {
@@ -71,6 +84,41 @@ class KafkaClient {
                     };
                   } catch (tokenError) {
                     console.error('❌ Failed to generate auth token:', tokenError);
+                    console.error('💡 Make sure AWS credentials are properly configured');
+                    console.error('💡 You can set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables');
+                    throw tokenError;
+                  }
+                }
+              };
+            } else if (mechanism === 'oauthbearer') {
+              // AWS MSK IAM authentication via OAuth bearer token (alternative approach)
+              console.log('🔐 Using AWS MSK IAM authentication via OAuth bearer...');
+              
+              const region = this.extractRegionFromBrokers();
+              console.log(`🌍 Using AWS region: ${region}`);
+              
+              // Configure AWS credentials if provided in config
+              if (this.config.sasl.accessKeyId && this.config.sasl.secretAccessKey) {
+                process.env.AWS_ACCESS_KEY_ID = this.config.sasl.accessKeyId;
+                process.env.AWS_SECRET_ACCESS_KEY = this.config.sasl.secretAccessKey;
+                console.log('🔑 AWS credentials configured from config');
+              }
+              
+              kafkaConfig.ssl = true; // MSK with IAM requires SSL
+              kafkaConfig.sasl = {
+                mechanism: 'oauthbearer',
+                oauthBearerProvider: async () => {
+                  console.log('🔐 Generating IAM auth token...');
+                  try {
+                    const authTokenResponse = await generateAuthToken({ region: region });
+                    console.log('✅ Auth token generated successfully');
+                    return {
+                      value: authTokenResponse.token
+                    };
+                  } catch (tokenError) {
+                    console.error('❌ Failed to generate auth token:', tokenError);
+                    console.error('💡 Make sure AWS credentials are properly configured');
+                    console.error('💡 You can set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables');
                     throw tokenError;
                   }
                 }
@@ -133,7 +181,11 @@ class KafkaClient {
 
           case 'aiven':
             // Aiven uses SASL_SSL with SCRAM-SHA-256 or OAuth
-            kafkaConfig.ssl = await this.buildSslConfig();
+            console.log('🔐 Aiven detected - configuring SSL with certificates...');
+            if (this.config.ssl && (this.config.ssl.ca || this.config.ssl.cert || this.config.ssl.key)) {
+              kafkaConfig.ssl = await this.buildSslConfig();
+            }
+            
             if (mechanism === 'oauthbearer' && useOIDC) {
               const oidcProvider = await createOIDCProvider('oidc', {
                 ...this.config.sasl,
@@ -383,7 +435,9 @@ class KafkaClient {
           case 'apache':
           default:
             // Apache Kafka - SSL depends on configuration
-            if (this.config.ssl !== false) {
+            if (this.config.ssl && (this.config.ssl.ca || this.config.ssl.cert || this.config.ssl.key)) {
+              kafkaConfig.ssl = await this.buildSslConfig();
+            } else if (this.config.ssl !== false) {
               kafkaConfig.ssl = true; // Default to SSL for security
             }
             
@@ -413,6 +467,10 @@ class KafkaClient {
         // AWS MSK without SASL - still needs SSL
         console.log('🔐 AWS MSK detected - enabling SSL for security');
         kafkaConfig.ssl = true;
+      } else if (this.config.ssl && (this.config.ssl.ca || this.config.ssl.cert || this.config.ssl.key)) {
+        // Any vendor with SSL certificates - use SSL authentication
+        console.log(`🔐 ${this.config.vendor} detected with SSL certificates - configuring SSL authentication...`);
+        kafkaConfig.ssl = await this.buildSslConfig();
       }
 
       this.admin = new Kafka(kafkaConfig).admin();
@@ -835,7 +893,10 @@ class KafkaClient {
     // Load certificate files if provided
     if (this.config.ssl?.ca) {
       try {
-        sslConfig.ca = await fs.readFile(this.config.ssl.ca);
+        const caPath = path.resolve(this.config.ssl.ca);
+        console.log(`🔐 Loading CA certificate from: ${caPath}`);
+        sslConfig.ca = await fs.readFile(caPath);
+        console.log('✅ CA certificate loaded successfully');
       } catch (error) {
         throw new Error(`Failed to read CA certificate file: ${error.message}`);
       }
@@ -843,7 +904,10 @@ class KafkaClient {
 
     if (this.config.ssl?.cert) {
       try {
-        sslConfig.cert = await fs.readFile(this.config.ssl.cert);
+        const certPath = path.resolve(this.config.ssl.cert);
+        console.log(`🔐 Loading client certificate from: ${certPath}`);
+        sslConfig.cert = await fs.readFile(certPath);
+        console.log('✅ Client certificate loaded successfully');
       } catch (error) {
         throw new Error(`Failed to read client certificate file: ${error.message}`);
       }
@@ -851,11 +915,21 @@ class KafkaClient {
 
     if (this.config.ssl?.key) {
       try {
-        sslConfig.key = await fs.readFile(this.config.ssl.key);
+        const keyPath = path.resolve(this.config.ssl.key);
+        console.log(`🔐 Loading client private key from: ${keyPath}`);
+        sslConfig.key = await fs.readFile(keyPath);
+        console.log('✅ Client private key loaded successfully');
       } catch (error) {
         throw new Error(`Failed to read client private key file: ${error.message}`);
       }
     }
+
+    // Log SSL configuration summary
+    console.log('🔐 SSL Configuration:');
+    console.log(`   CA Certificate: ${this.config.ssl?.ca ? 'Loaded' : 'Not provided'}`);
+    console.log(`   Client Certificate: ${this.config.ssl?.cert ? 'Loaded' : 'Not provided'}`);
+    console.log(`   Client Private Key: ${this.config.ssl?.key ? 'Loaded' : 'Not provided'}`);
+    console.log(`   Reject Unauthorized: ${sslConfig.rejectUnauthorized}`);
 
     return sslConfig;
   }

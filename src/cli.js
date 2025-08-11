@@ -11,6 +11,8 @@ const { Validators } = require('./validators');
 const { HealthChecker } = require('./health-checker');
 const { displayValidationResults, displayTopicSummary } = require('./utils');
 const { SupabaseAnalytics } = require('./analytics');
+const { NATSObjectStore } = require('./nats-object-store');
+const { log } = require('console');
 
 class CLI {
   constructor(options = {}) {
@@ -21,6 +23,7 @@ class CLI {
     };
     this.kafkaClient = null;
     this.fileService = null;
+    this.natsObjectStore = null;
     this.analytics = new SupabaseAnalytics();
     
     // Handle bootstrap-servers option mapping to brokers
@@ -55,6 +58,39 @@ class CLI {
         config.kafka.brokers = config.kafka.brokers.split(',').map(broker => broker.trim());
       }
 
+      // Validate vendor field for authentication mechanisms
+      if (config.kafka.useSasl && config.kafka.sasl) {
+        const mechanism = config.kafka.sasl.mechanism;
+        
+        // Check for AWS MSK IAM authentication
+        if (mechanism === 'AWS_MSK_IAM') {
+          if (!config.kafka.vendor) {
+            throw new Error(
+              'Missing "vendor" field in kafka configuration. ' +
+              'For AWS MSK IAM authentication, you must specify "vendor": "aws-msk". ' +
+              'This tells the tool how to handle the AWS MSK IAM authentication properly.'
+            );
+          } else if (config.kafka.vendor !== 'aws-msk') {
+            throw new Error(
+              `Invalid vendor "${config.kafka.vendor}" for AWS MSK IAM authentication. ` +
+              'For AWS MSK IAM, the vendor must be set to "aws-msk". ' +
+              'This ensures the authentication logic works correctly.'
+            );
+          }
+        }
+        
+        // Check for other vendor-specific mechanisms
+        if (mechanism === 'oauthbearer') {
+          if (!config.kafka.vendor) {
+            throw new Error(
+              'Missing "vendor" field in kafka configuration. ' +
+              'For OAuth/OIDC authentication, you must specify the vendor (e.g., "aws-msk", "confluent-cloud", "oidc"). ' +
+              'This tells the tool which OAuth provider to use.'
+            );
+          }
+        }
+      }
+
       this.config = config;
       
       // Add email if not present in config file
@@ -66,6 +102,51 @@ class CLI {
       return true;
     } catch (error) {
       console.error(chalk.red(`❌ Failed to load config file: ${error.message}`));
+      
+      // Provide additional help for common vendor-related issues
+      if (error.message.includes('vendor')) {
+        console.log(chalk.yellow('\n💡 Configuration Help:'));
+        console.log(chalk.gray('• For AWS MSK IAM: Use "vendor": "aws-msk"'));
+        console.log(chalk.gray('• For Confluent Cloud: Use "vendor": "confluent-cloud"'));
+        console.log(chalk.gray('• For Aiven: Use "vendor": "aiven"'));
+        console.log(chalk.gray('• For Apache Kafka: Use "vendor": "apache"'));
+        console.log(chalk.gray('• For Redpanda: Use "vendor": "redpanda"'));
+        console.log(chalk.yellow('\n📖 See config-examples/ directory for complete examples.'));
+      }
+      
+      return false;
+    }
+  }
+
+  async loadNATSConfig(natsConfigPath) {
+    try {
+      const fullPath = path.resolve(natsConfigPath);
+      if (!fs.existsSync(fullPath)) {
+        throw new Error(`NATS config file not found: ${fullPath}`);
+      }
+
+      const configContent = fs.readFileSync(fullPath, 'utf8');
+      const natsConfig = JSON.parse(configContent);
+
+      // Create NATS object store
+      this.natsObjectStore = new NATSObjectStore(natsConfig);
+
+      // Connect to NATS
+      const connected = await this.natsObjectStore.connect();
+      if (!connected) {
+        throw new Error('Failed to connect to NATS');
+      }
+
+      // Setup object store bucket
+      const bucketReady = await this.natsObjectStore.getOrCreateBucket();
+      if (!bucketReady) {
+        throw new Error('Failed to setup Object Store bucket');
+      }
+
+      console.log(chalk.green(`✅ NATS configuration loaded from: ${fullPath}`));
+      return true;
+    } catch (error) {
+      console.error(chalk.red(`❌ Failed to load NATS config file: ${error.message}`));
       return false;
     }
   }
@@ -132,6 +213,7 @@ class CLI {
 
     // Authentication configuration based on vendor
     let saslConfig = null;
+    let sslConfig = null;
     if (vendorAnswer.vendor === 'aws-msk') {
       console.log(chalk.yellow('\n🔐 AWS MSK Authentication'));
       const authType = await inquirer.prompt([
@@ -223,26 +305,49 @@ class CLI {
         {
           type: 'input',
           name: 'username',
-          message: 'Username:',
+          message: 'Username (leave empty is using SSL only):',
           validate: (input) => {
-            if (!input.trim()) return 'Username is required for Aiven';
             return true;
           }
         },
         {
           type: 'password',
           name: 'password',
-          message: 'Password:',
+          message: 'Password (leave empty if using SSL only):',
           validate: (input) => {
-            if (!input.trim()) return 'Password is required for Aiven';
             return true;
           }
+        },
+        {
+          type: 'input',
+          name: 'caPath',
+          message: 'CA Certificate path (optional, e.g., "./certs/ca.pem"):',
+          default: './certs/ca.pem'
+        },
+        {
+          type: 'input',
+          name: 'certPath',
+          message: 'Client Certificate path (optional, eg. "./certs/service.cert"):',
+          default: './certs/service.cert',
+        },
+        {
+          type: 'input',
+          name: 'keyPath',
+          message: 'Client Private Key path (optional, eg. "./certs/service.key"):',
+          default: './certs/service.key',
         }
       ]);
+      
       saslConfig = {
         mechanism: 'scram-sha-256',
         username: aivenAnswers.username,
         password: aivenAnswers.password
+      };
+      
+      sslConfig = {
+        ca: aivenAnswers.caPath,
+        cert: aivenAnswers.certPath,
+        key: aivenAnswers.keyPath
       };
     } else {
       // For other vendors, ask if SASL is needed
@@ -301,7 +406,8 @@ class CLI {
       brokers: kafkaAnswers.brokers.split(',').map(broker => broker.trim()), // Convert string to array
       vendor: vendorAnswer.vendor,
       useSasl: !!saslConfig,
-      sasl: saslConfig
+      sasl: saslConfig,
+      ssl: sslConfig
     };
 
     // File Output Configuration
@@ -372,6 +478,7 @@ class CLI {
       
       // Use Commander.js options
       const configPath = this.options.config;
+      const natsConfigPath = this.options.natsConfig;
       
       if (configPath) {
         console.log(chalk.gray(`Debug: Loading config from: ${configPath}`));
@@ -383,6 +490,16 @@ class CLI {
       } else {
         console.log(chalk.gray('Debug: No config file specified, using interactive mode'));
         await this.promptForConfig();
+      }
+
+      // Load NATS config if provided
+      if (natsConfigPath) {
+        console.log(chalk.gray(`Debug: Loading NATS config from: ${natsConfigPath}`));
+        const natsConfigLoaded = await this.loadNATSConfig(natsConfigPath);
+        if (!natsConfigLoaded) {
+          process.exit(1);
+        }
+        console.log(chalk.gray('Debug: NATS config loaded successfully'));
       }
 
       // Initialize services without validation
@@ -536,6 +653,16 @@ class CLI {
       // Add health check results to analysis results
       if (healthResults) {
         analysisResults.healthChecks = healthResults;
+      }
+
+        // Store results in NATS
+      if (this.options.natsConfig) {
+        spinner.text = 'Saving results to NATS...';
+        spinner.render();
+        await this.natsObjectStore.storeObject(analysisResults);
+        spinner.stop();
+        console.log(chalk.green('\n✅ Analysis completed and stored to NATS!'));
+        process.exit(0);
       }
       
       // Check if email is provided for file generation

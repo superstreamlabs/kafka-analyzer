@@ -2,6 +2,16 @@
 
 This directory contains configuration examples for different Kafka vendors. Each vendor has specific authentication requirements and SSL settings.
 
+## ⚠️ Important: Vendor Field Requirement
+
+**The `vendor` field is required for authentication mechanisms that are vendor-specific:**
+
+- **AWS MSK IAM**: Must use `"vendor": "aws-msk"`
+- **OAuth/OIDC**: Must specify the vendor (e.g., `"aws-msk"`, `"confluent-cloud"`, `"oidc"`)
+- **Other mechanisms**: Vendor field helps optimize connection settings
+
+If you get an error about missing vendor field, add the appropriate vendor value to your configuration.
+
 ## 🔐 Authentication Methods Supported
 
 - **PLAINTEXT** - No authentication (development only)
@@ -35,6 +45,34 @@ This directory contains configuration examples for different Kafka vendors. Each
   }
 }
 ```
+
+**AWS MSK IAM Authentication (Port 9198):**
+```json
+{
+  "kafka": {
+    "brokers": ["your-msk-cluster.amazonaws.com:9198"],
+    "clientId": "superstream-analyzer",
+    "vendor": "aws-msk",
+    "useSasl": true,
+    "sasl": {
+      "mechanism": "AWS_MSK_IAM",
+      "accessKeyId": "AKIA...",
+      "secretAccessKey": "...",
+      "authorizationIdentity": "arn:aws:iam::123456789012:user/your-iam-user"
+    }
+  },
+  "file": {
+    "outputDir": "./kafka-analysis",
+    "formats": ["json", "csv", "html"],
+    "includeMetadata": true
+  }
+}
+```
+
+**Note**: For AWS MSK IAM authentication, you can either:
+1. Provide AWS credentials in the config file (as shown above)
+2. Set `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment variables
+3. Use AWS IAM roles (if running on EC2 or ECS)
 
 **SCRAM Authentication (Port 9096):**
 ```json

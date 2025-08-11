@@ -218,14 +218,11 @@ The full list is under the `./config-examples/` folder:
     "brokers": ["kafka-xxxxx-aiven-kafka.aivencloud.com:12345"],
     "clientId": "superstream-analyzer",
     "vendor": "aiven",
-    "useSasl": true,
-    "sasl": {
-      "mechanism": "SCRAM-SHA-256",
-      "username": "avnadmin",
-      "password": "YOUR_AVNADMIN_PASSWORD"
-    },
+    "useSasl": false,
     "ssl": {
-      "ca": "./path/to/ca.pem"
+      "ca": "path/to/ca.pem",
+      "cert": "path/to/service.cert",
+      "key": "path/to/service.key"
     }
   },
   "file": {
@@ -548,6 +545,27 @@ The tool includes comprehensive validation that will:
 ## 🚨 Troubleshooting
 
 ### Common Issues
+
+**Missing Vendor Field Error**
+- **Error**: "Missing 'vendor' field in kafka configuration"
+- **Solution**: Add the appropriate vendor field to your configuration:
+  - AWS MSK IAM: `"vendor": "aws-msk"`
+  - Confluent Cloud: `"vendor": "confluent-cloud"`
+  - Aiven: `"vendor": "aiven"`
+  - Apache Kafka: `"vendor": "apache"`
+  - Redpanda: `"vendor": "redpanda"`
+- **Why**: The vendor field tells the tool how to handle vendor-specific authentication mechanisms
+
+**AWS MSK IAM Authentication Failed**
+- **Error**: "Failed to generate auth token" or "authenticationProvider is not a function"
+- **Solution**: 
+  1. Ensure AWS credentials are properly configured:
+     - Set `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment variables, OR
+     - Include credentials in config file: `"accessKeyId"` and `"secretAccessKey"`
+  2. Verify the IAM user has proper MSK permissions
+  3. Check that the broker URLs are correct (should use port 9198 for IAM)
+  4. Ensure the region matches your MSK cluster
+- **Why**: AWS MSK IAM requires valid AWS credentials and proper IAM permissions
 
 **Connection Timeout**
 - Verify broker URLs are correct
