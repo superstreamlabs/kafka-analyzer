@@ -463,10 +463,6 @@ class KafkaClient {
             }
             break;
         }
-      } else if (this.config.vendor === 'aws-msk') {
-        // AWS MSK without SASL - still needs SSL
-        console.log('🔐 AWS MSK detected - enabling SSL for security');
-        kafkaConfig.ssl = true;
       } else if (this.config.ssl && (this.config.ssl.ca || this.config.ssl.cert || this.config.ssl.key)) {
         // Any vendor with SSL certificates - use SSL authentication
         console.log(`🔐 ${this.config.vendor} detected with SSL certificates - configuring SSL authentication...`);
