@@ -1,0 +1,13 @@
+{
+  "kafka": {
+    "brokers": ["b-1.your-cluster.abc123.c2.kafka.us-east-1.amazonaws.com:9098", "b-2.your-cluster.abc123.c2.kafka.us-east-1.amazonaws.com:9098"],
+    "vendor": "aws-msk",
+    "useSasl": false
+  },
+  "file": {
+    "outputDir": "./kafka-analysis",
+    "formats": ["json", "csv", "html"],
+    "includeMetadata": true
+  },
+  "email": "user@example.com"
+}
