@@ -145,28 +145,19 @@ class HealthChecker {
     // Check 5: Under-Replicated Partitions
     await this.checkUnderReplicatedPartitions(topics, results);
     
-    // Check 6: Rack Awareness
-    await this.checkRackAwareness(clusterInfo, topics, results);
-    
-    // Check 7: Replica Distribution
-    await this.checkReplicaDistribution(clusterInfo, topics, results);
-    
-    // Check 8: Metrics Configuration
-    await this.checkMetricsEnabled(clusterInfo, topics, results);
-    
-    // Check 9: Logging Configuration
+    // Check 6: Logging Configuration
     await this.checkLoggingConfiguration(clusterInfo, topics, results);
     
-    // Check 10: Authentication Configuration
+    // Check 7: Authentication Configuration
     await this.checkAuthenticationConfiguration(clusterInfo, topics, results);
     
-    // Check 11: Quotas Configuration
+    // Check 8: Quotas Configuration
     await this.checkQuotasConfiguration(clusterInfo, topics, results);
     
-    // Check 12: Payload Compression
+    // Check 9: Payload Compression
     await this.checkPayloadCompression(clusterInfo, topics, results);
     
-    // Check 13: Infinite Retention Policy
+    // Check 10: Infinite Retention Policy
     await this.checkInfiniteRetentionPolicy(clusterInfo, topics, results);
     
     // TODO: Implement other Confluent Cloud specific checks
