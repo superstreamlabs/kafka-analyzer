@@ -39,7 +39,11 @@ class KafkaClient {
       // If SSL keys are provided, disable SASL
       if (this.config.ssl && (this.config.ssl.ca || this.config.ssl.cert || this.config.ssl.key)) {
         this.config.useSasl = false;
-      } 
+      }
+      
+      if (this.config.vendor === 'aiven' && this.config.ssl.ca && !this.config.ssl.cert && !this.config.ssl.key) {
+        this.config.useSasl = true;
+      }
 
       // Handle authentication based on vendor and configuration
       if (this.config.useSasl && this.config.sasl) {
@@ -180,52 +184,25 @@ class KafkaClient {
             return true;
 
           case 'aiven':
-            // Aiven uses SASL_SSL with SCRAM-SHA-256 or OAuth
-            console.log('🔐 Aiven detected - configuring SSL with certificates...');
-            if (this.config.ssl && (this.config.ssl.ca || this.config.ssl.cert || this.config.ssl.key)) {
-              kafkaConfig.ssl = await this.buildSslConfig();
-            }
+            // Aiven supports both SSL with certificates and SASL_SSL with username/password
+            const hasSaslCredentials = this.config.sasl && this.config.sasl.username && this.config.sasl.password;
+            const hasSslCertificates = this.config.ssl && (this.config.ssl.cert || this.config.ssl.key);
             
-            if (mechanism === 'oauthbearer' && useOIDC) {
-              const oidcProvider = await createOIDCProvider('oidc', {
-                ...this.config.sasl,
-                discoveryUrl: this.config.sasl.discoveryUrl,
-                clientId: this.config.sasl.clientId,
-                clientSecret: this.config.sasl.clientSecret,
-                tokenHost: this.config.sasl.host || this.config.sasl.tokenHost,
-                tokenPath: this.config.sasl.path || this.config.sasl.tokenPath,
-                scope: this.config.sasl.scope,
-                audience: this.config.sasl.audience,
-                validateToken: this.config.sasl.validateToken
-              });
-              
-              kafkaConfig.sasl = {
-                mechanism: 'oauthbearer',
-                oauthBearerProvider: async () => {
-                  return await oidcProvider.getToken();
-                }
-              };
-            } else if (mechanism === 'oauthbearer') {
-              // Legacy OAuth support
-              const oauthProvider = createOAuthProvider('generic', {
-                clientId: this.config.sasl.clientId,
-                clientSecret: this.config.sasl.clientSecret,
-                tokenHost: this.config.sasl.host || this.config.sasl.tokenHost,
-                tokenPath: this.config.sasl.path || this.config.sasl.tokenPath
-              });
-              
-              kafkaConfig.sasl = {
-                mechanism: 'oauthbearer',
-                oauthBearerProvider: async () => {
-                  return await oauthProvider.getToken();
-                }
-              };
-            } else {
+            if (hasSaslCredentials) {
+              // SASL_SSL mode with username/password
+              console.log('🔐 Aiven detected - configuring SASL_SSL with username/password...');
+              kafkaConfig.ssl = await this.buildSslConfig();
               kafkaConfig.sasl = {
                 mechanism: 'scram-sha-256', // Aiven typically uses SCRAM-SHA-256
                 username: this.config.sasl.username,
                 password: this.config.sasl.password
               };
+            } else if (hasSslCertificates) {
+              // SSL mode with client certificates
+              console.log('🔐 Aiven detected - configuring SSL with client certificates...');
+              kafkaConfig.ssl = await this.buildSslConfig();
+            } else {
+              throw new Error('Aiven configuration requires either SASL credentials (username/password) or SSL certificates (cert/key)');
             }
             break;
 
