@@ -3,11 +3,14 @@
     "brokers": ["kafka-xxxxx-aiven-kafka.aivencloud.com:12345"],
     "clientId": "superstream-analyzer",
     "vendor": "aiven",
-    "useSasl": false,
+    "useSasl": true,
+    "sasl": {
+      "mechanism": "scram-sha-256",
+      "username": "avnadmin",
+      "password": "*********"
+    },
     "ssl": {
-      "ca": "path/to/ca.pem",
-      "cert": "path/to/service.cert",
-      "key": "path/to/service.key"
+      "ca": "./certs/ca.pem"
     }
   },
   "file": {

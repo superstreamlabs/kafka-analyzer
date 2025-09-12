@@ -448,11 +448,19 @@ npx superstream-kafka-analyzer
 - **Port**: 9092
 - **Best for**: Enterprise Confluent deployments
 
-### 7. **Aiven Kafka** (`config.example.aiven-kafka.json`)
-- **Use case**: Aiven managed Kafka service
-- **Authentication**: SASL_SSL with PLAIN mechanism
+### 7. **Aiven Kafka - SASL Authentication** (`config.example.aiven-kafka-sasl.json`)
+- **Use case**: Aiven managed Kafka service with SASL authentication
+- **Authentication**: SASL_SSL with SCRAM-SHA-256 mechanism
 - **Port**: Custom (e.g., 12345)
-- **Best for**: Cloud-managed Kafka with Aiven
+- **Best for**: Cloud-managed Kafka with Aiven using username/password authentication
+- **Requirements**: Username, password, and CA certificate
+
+### 7a. **Aiven Kafka - SSL with Certificates** (`config.example.aiven-kafka-ssl.json`)
+- **Use case**: Aiven managed Kafka service with SSL client certificates
+- **Authentication**: SSL with client certificates
+- **Port**: Custom (e.g., 12345)
+- **Best for**: Cloud-managed Kafka with Aiven using certificate-based authentication
+- **Requirements**: CA certificate, client certificate, and private key
 
 ### 8. **Redpanda** (`config.example.redpanda.json`)
 - **Use case**: Redpanda streaming platform
@@ -687,8 +695,13 @@ npx superstream-kafka-analyzer
 
 ### Aiven Kafka
 - Uses custom port numbers (not 9092)
-- Default username is `avnadmin`
+- Supports two authentication methods:
+  - **SASL_SSL**: Username/password with SCRAM-SHA-256 (recommended)
+  - **SSL**: Client certificates with CA verification
+- Default username is `avnadmin` for SASL authentication
 - Get connection details from Aiven console
+- CA certificate is required for SASL mode
+- For SSL mode, all three certificates (CA, client cert, private key) are required
 
 ### Redpanda
 - Compatible with Kafka protocol
