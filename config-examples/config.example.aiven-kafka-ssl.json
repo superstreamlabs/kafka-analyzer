@@ -1,0 +1,19 @@
+{
+  "kafka": {
+    "brokers": ["kafka-xxxxx-aiven-kafka.aivencloud.com:12345"],
+    "clientId": "superstream-analyzer",
+    "vendor": "aiven",
+    "useSasl": false,
+    "ssl": {
+      "ca": "./certs/ca.pem",
+      "cert": "./certs/service.cert",
+      "key": "./certs/service.key"
+    }
+  },
+  "file": {
+    "outputDir": "./kafka-analysis",
+    "formats": ["json", "csv", "html", "txt"],
+    "includeMetadata": true
+  },
+  "email": "user@example.com"
+}

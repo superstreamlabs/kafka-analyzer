@@ -188,8 +188,8 @@ class CLI {
       brokerMessage = 'AWS MSK broker URLs (comma-separated):';
       brokerDefault = 'b-1.your-cluster.region.amazonaws.com:9092';
     } else if (vendorAnswer.vendor === 'aiven') {
-      brokerMessage = 'Aiven broker URLs (comma-separated):';
-      brokerDefault = 'kafka-xxxxx.aivencloud.com:12345';
+      brokerMessage = 'kafka-xxxxx.aivencloud.com:12345';
+      brokerDefault = 'superstream-test-superstream-3591.k.aivencloud.com:18848';
     }
     
     const kafkaAnswers = await inquirer.prompt([
@@ -328,13 +328,13 @@ class CLI {
           type: 'input',
           name: 'certPath',
           message: 'Client Certificate path (optional, eg. "./certs/service.cert"):',
-          default: './certs/service.cert',
+          default: '',
         },
         {
           type: 'input',
           name: 'keyPath',
           message: 'Client Private Key path (optional, eg. "./certs/service.key"):',
-          default: './certs/service.key',
+          default: '',
         }
       ]);
       
