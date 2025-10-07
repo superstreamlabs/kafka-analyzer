@@ -24,7 +24,7 @@ Interactive web dashboard for monitoring and analyzing Kafka cluster health and 
 ### Health Checks
 
 - Comprehensive table of all health check results
-- Color-coded status indicators (✅ Passed, ❌ Failed, ⚠️ Warning)
+- Color-coded status indicators (✅ Passed, ❌ Failed)
 - Recommendations for each check
 
 ## 🛠️ Installation

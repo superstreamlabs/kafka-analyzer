@@ -311,10 +311,8 @@ class KafkaDashboard:
     def get_status_emoji(self, status):
         """Get emoji for status"""
         status_map = {
-            'PASSED': '✅ PASSED',
             'FAILED': '❌ FAILED',
-            'WARNING': '⚠️ WARNING',
-            'INFO': 'ℹ️ INFO'
+            'PASSED': '✅ PASSED'
         }
         return status_map.get(status, '? UNKNOWN')
     

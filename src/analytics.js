@@ -190,8 +190,7 @@ class SupabaseAnalytics {
       vendor: vendor || 'unknown',
       total_checks: results.totalChecks,
       passed_checks: results.passedChecks,
-      failed_checks: results.failedChecks,
-      warnings: results.warnings
+      failed_checks: results.failedChecks
     });
   }
 

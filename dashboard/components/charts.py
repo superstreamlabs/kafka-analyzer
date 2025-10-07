@@ -64,11 +64,10 @@ class ChartBuilder:
     def create_health_checks_summary(health_data: Dict[str, int]) -> go.Figure:
         """Create health checks summary bar chart"""
         
-        categories = ['Passed', 'Failed', 'Warnings']
+        categories = ['Passed', 'Failed']
         values = [
             health_data.get('passedChecks', 0),
             health_data.get('failedChecks', 0),
-            health_data.get('warnings', 0)
         ]
         colors = ['#28a745', '#dc3545', '#ffc107']
         

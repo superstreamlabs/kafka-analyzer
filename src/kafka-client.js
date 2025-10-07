@@ -414,8 +414,10 @@ class KafkaClient {
             // Apache Kafka - SSL depends on configuration
             if (this.config.ssl && (this.config.ssl.ca || this.config.ssl.cert || this.config.ssl.key)) {
               kafkaConfig.ssl = await this.buildSslConfig();
-            } else if (this.config.ssl !== false) {
-              kafkaConfig.ssl = true; // Default to SSL for security
+            } else if (this.config.ssl === false) {
+              kafkaConfig.ssl = false;
+            }else if (this.config.sasl) {
+              kafkaConfig.ssl = false;
             }
             
             if (mechanism === 'oauthbearer' && useOIDC) {
@@ -584,8 +586,8 @@ class KafkaClient {
       }
 
       const configs = configResponse.resources[0].configEntries.reduce((acc, entry) => {
-        acc[entry.name] = {
-          value: entry.value,
+        acc[entry.configName] = {
+          value: entry.configValue,
           isDefault: entry.isDefault,
           isSensitive: entry.isSensitive
         };
@@ -785,12 +787,13 @@ class KafkaClient {
       const groupDetails = await Promise.all(
         groups.groups.map(async (group) => {
           try {
-            const details = await this.admin.describeGroup(group.groupId);
+            const details = await this.admin.describeGroups([group.groupId]);
+            const gd = details.groups[0];
             return {
               groupId: group.groupId,
-              protocolType: details.protocolType,
-              members: details.members.length,
-              state: details.state
+              protocolType: gd.protocolType,
+              members: gd.members.length,
+              state: gd.state
             };
           } catch (error) {
             return {
@@ -836,6 +839,45 @@ class KafkaClient {
         topics = metadata;
       }
       
+      // Get broker configurations if supported
+      let brokerConfigs = {};
+      if (this.admin.describeConfigs && clusterInfo.brokers && clusterInfo.brokers.length > 0) {
+        try {
+          const brokerResources = clusterInfo.brokers.map(broker => ({
+            type: 4, // Broker resource type
+            name: broker.nodeId.toString()
+          }));
+          const configResponse = await this.admin.describeConfigs({
+            resources: brokerResources
+          });
+          
+          if (configResponse.resources) {
+            configResponse.resources.forEach((resource, index) => {
+              if (resource.error) {
+                console.warn(`⚠️  Error fetching config for broker ${resource.name}: ${resource.error}`);
+                return;
+              }
+              if (resource.configEntries) {
+                const brokerConfig = {};
+                resource.configEntries.forEach(config => {
+                  brokerConfig[config.configName] = {
+                    value: config.configValue,
+                    source: config.configSource,
+                    isDefault: config.isDefault,
+                    isSensitive: config.isSensitive
+                  };
+                });
+                const brokerNodeId = clusterInfo.brokers[index] ? clusterInfo.brokers[index].nodeId.toString() : `broker-${index}`;
+                brokerConfigs[brokerNodeId] = brokerConfig;
+              }
+            });
+          }
+          
+        } catch (configError) {
+          console.warn(`⚠️  Failed to fetch broker configurations: ${configError.message}`);
+        }
+      }
+      
       const clusterData = {
         clusterId: clusterInfo.clusterId || 'unknown',
         controller: clusterInfo.controller,
@@ -843,7 +885,8 @@ class KafkaClient {
           nodeId: broker.nodeId,
           host: broker.host,
           port: broker.port,
-          rack: broker.rack
+          rack: broker.rack,
+          config: brokerConfigs[broker.nodeId.toString()] || {}
         })) : [],
         topics: topics.length
       };
@@ -1074,5 +1117,80 @@ class KafkaClient {
     };
   }
 }
+
+// Extending prototype with lag computation helpers without changing class shape
+KafkaClient.prototype.getAllTopicNames = async function() {
+  const metadata = await this.admin.fetchTopicMetadata();
+  if (metadata && Array.isArray(metadata.topics)) {
+    return metadata.topics.map(t => t.name).filter(Boolean);
+  }
+  if (Array.isArray(metadata)) {
+    return metadata.map(t => t.name).filter(Boolean);
+  }
+  return [];
+};
+
+KafkaClient.prototype.computeGroupLag = async function(groupId) {
+  const result = { groupId, totalLag: 0, topics: [] };
+  try {
+    const topicNames = await this.getAllTopicNames();
+    const topicLagMap = {};
+
+    for (const topic of topicNames) {
+      try {
+        if (!this.admin.fetchOffsets || !this.admin.fetchTopicOffsets) continue;
+        const committed = await this.admin.fetchOffsets({ groupId, topic });
+        const end = await this.admin.fetchTopicOffsets(topic);
+
+        // Build maps for quick lookup; iterate end offsets as source of truth for partitions
+        const endByPartition = new Map((end || []).map(p => {
+          const endStr = (p && (p.offset ?? p.high ?? '0')) || '0';
+          let endVal; try { endVal = BigInt(endStr); } catch { endVal = 0n; }
+          return [p.partition, endVal];
+        }));
+        const committedByPartition = new Map((committed || []).map(p => {
+          const raw = (p && p.offset) != null ? String(p.offset) : '0';
+          const normalized = raw === '-1' ? '0' : raw; // -1 => no commit
+          let val; try { val = BigInt(normalized); } catch { val = 0n; }
+          return [p.partition, val];
+        }));
+
+        let topicLag = 0n;
+        endByPartition.forEach((endVal, part) => {
+          const committedVal = committedByPartition.get(part) ?? 0n;
+          const lag = endVal > committedVal ? (endVal - committedVal) : 0n;
+          if (lag > 0n) topicLag += lag;
+        });
+
+        if (topicLag > 0n) {
+          topicLagMap[topic] = (topicLagMap[topic] ?? 0n) + topicLag;
+        }
+      } catch (error) {
+        console.warn(`Warning: Failed to compute lag for topic ${topic}: ${error.message}`);
+      }
+    }
+
+    const topics = Object.entries(topicLagMap)
+      .map(([topic, lag]) => ({ topic, lag: Number(lag) }))
+      .sort((a, b) => b.lag - a.lag);
+
+    const totalLag = topics.reduce((s, t) => s + t.lag, 0);
+
+    result.topics = topics;
+    result.totalLag = totalLag;
+    return result;
+  } catch (err) {
+    return result;
+  }
+};
+
+KafkaClient.prototype.computeLagForGroups = async function(groupIds) {
+  const analyses = [];
+  for (const gid of groupIds) {
+    const a = await this.computeGroupLag(gid);
+    analyses.push(a);
+  }
+  return analyses;
+};
 
 module.exports = { KafkaClient };

@@ -214,7 +214,6 @@
 
     .summary-number.total { color: #1e293b; }
     .summary-number.passed { color: #059669; }
-    .summary-number.warning { color: #d97706; }
     .summary-number.failed { color: #dc2626; }
 
     /* Health Checks */
@@ -249,16 +248,8 @@
       border-left: 4px solid #10b981;
     }
 
-    .health-check.warning {
-      border-left: 4px solid #f59e0b;
-    }
-
     .health-check.fail {
       border-left: 4px solid #ef4444;
-    }
-
-    .health-check.info {
-      border-left: 4px solid #3b82f6;
     }
 
     .check-header {
@@ -283,16 +274,8 @@
       background-color: #10b981;
     }
     
-    .status-icon.warning { 
-      background-color: #f59e0b;
-    }
-    
     .status-icon.fail { 
       background-color: #ef4444;
-    }
-    
-    .status-icon.info { 
-      background-color: #3b82f6;
     }
 
     .status-icon img {
@@ -314,6 +297,11 @@
       font-size: 12px;
       font-weight: 600;
       text-transform: uppercase;
+      width: 90px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
     }
 
     .status-badge.pass {
@@ -321,19 +309,43 @@
       color: #166534;
     }
 
-    .status-badge.warning {
-      background: #fef3c7;
-      color: #92400e;
-    }
-
     .status-badge.fail {
       background: #fee2e2;
       color: #991b1b;
     }
 
-    .status-badge.info {
-      background: #dbeafe;
-      color: #1e40af;
+    .severity-badge {
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      margin-left: 8px;
+      width: 90px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+
+    .severity-badge.critical {
+      background: #fef2f2;
+      color: #dc2626;
+    }
+
+    .severity-badge.high {
+      background: #fff7ed;
+      color: #ea580c;
+    }
+
+    .severity-badge.medium {
+      background: #fffbeb;
+      color: #ca8a04;
+    }
+
+    .severity-badge.low {
+      background: #f0f9ff;
+      color: #2563eb;
     }
 
     .check-description {

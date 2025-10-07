@@ -189,7 +189,6 @@ class CLI {
       brokerDefault = 'b-1.your-cluster.region.amazonaws.com:9092';
     } else if (vendorAnswer.vendor === 'aiven') {
       brokerMessage = 'kafka-xxxxx.aivencloud.com:12345';
-      brokerDefault = 'superstream-test-superstream-3591.k.aivencloud.com:18848';
     }
     
     const kafkaAnswers = await inquirer.prompt([
@@ -299,6 +298,59 @@ class CLI {
       console.log(chalk.gray(`   Session Timeout: 45000ms`));
       console.log(chalk.gray(`   API Key: ${confluentAnswers.username ? '***' + confluentAnswers.username.slice(-4) : 'NOT SET'}`));
       console.log(chalk.gray(`   API Secret: ${confluentAnswers.password ? '***' + confluentAnswers.password.slice(-4) : 'NOT SET'}`));
+      
+      // Ask for Confluent Cloud API credentials for ACL analysis (optional)
+      const aclAnalysisAnswer = await inquirer.prompt([
+        {
+          type: 'confirm',
+          name: 'enableAclAnalysis',
+          message: 'Enable ACL analysis (requires additional API credentials)?',
+          default: false
+        }
+      ]);
+      
+      if (aclAnalysisAnswer.enableAclAnalysis) {
+        const aclCredentials = await inquirer.prompt([
+          {
+            type: 'input',
+            name: 'resourceApiKey',
+            message: 'Confluent Cloud resource API Key (for ACL analysis):',
+            validate: (input) => {
+              if (!input.trim()) return 'API Key is required for ACL analysis';
+              return true;
+            }
+          },
+          {
+            type: 'password',
+            name: 'resourceApiSecret',
+            message: 'Confluent Cloud resource API Secret (for ACL analysis):',
+            validate: (input) => {
+              if (!input.trim()) return 'API Secret is required for ACL analysis';
+              return true;
+            }
+          },
+          {
+            type: 'input',
+            name: 'confluentClusterId',
+            message: 'Confluent Cloud Cluster ID:',
+            validate: (input) => {
+              if (!input.trim()) return 'Cluster ID is required for ACL analysis';
+              return true;
+            }
+          }
+        ]);
+        
+        // Store ACL analysis credentials in config
+        this.config.confluent = {
+          resourceApiKey: aclCredentials.resourceApiKey,
+          resourceApiSecret: aclCredentials.resourceApiSecret,
+          clusterId: aclCredentials.confluentClusterId
+        }
+
+        console.log(chalk.gray('🔍 ACL Analysis configuration:'));
+        console.log(chalk.gray(`   API Key: ${aclCredentials.resourceApiKey ? '***' + aclCredentials.resourceApiKey.slice(-4) : 'NOT SET'}`));
+        console.log(chalk.gray(`   Cluster ID: ${aclCredentials.confluentClusterId}`));
+      }
     } else if (vendorAnswer.vendor === 'aiven') {
       console.log(chalk.yellow('\n🔐 Aiven Kafka Authentication'));
       const aivenAnswers = await inquirer.prompt([
@@ -683,7 +735,14 @@ class CLI {
         spinner.stop();
         
         // Display summary
-        console.log(chalk.green('\n✅ Analysis completed successfully!'));
+        console.log(chalk.green('\n✅ Analysis completed successfully! \n'));
+
+        if (healthResults.failedChecks === 0) {
+          console.log(chalk.green('🎉 All health checks passed! Your Kafka cluster is healthy. \n'));
+        } else {
+          console.log(chalk.red('🚨 Issues detected. Please review and fix the problems above. \n'));
+        }
+
         console.log(chalk.blue('\n📊 Analysis Summary:'));
         console.log(chalk.gray(`• Total Topics: ${analysisResults.summary.totalTopics}`));
         console.log(chalk.gray(`• Total Partitions: ${analysisResults.summary.totalPartitions}`));
@@ -740,7 +799,7 @@ class CLI {
         vendor: this.config.kafka.vendor,
         topics_count: analysisResults.summary.totalTopics,
         health_checks_count: healthResults ? healthResults.totalChecks : 0,
-        has_issues: healthResults ? (healthResults.failedChecks > 0 || healthResults.warnings > 0) : false
+        has_issues: healthResults ? (healthResults.failedChecks > 0) : false
       }, true); // Include detailed location
 
       // Track health checks with location if available
@@ -750,7 +809,6 @@ class CLI {
           total_checks: healthResults.totalChecks,
           passed_checks: healthResults.passedChecks,
           failed_checks: healthResults.failedChecks,
-          warnings: healthResults.warnings
         }, true); // Include detailed location
       }
 
@@ -778,7 +836,7 @@ class CLI {
         return;
       }
 
-      const healthChecker = new HealthChecker(vendor, this.config.kafka);
+      const healthChecker = new HealthChecker(vendor, this.config.kafka, this.config.confluent);
       const healthResults = await healthChecker.runHealthChecks(clusterInfo, topics, consumerGroups);
       
       // Add health check results to the analysis results for file output

@@ -83,12 +83,13 @@ class FileService {
     
     if (topicInfo.healthChecks && topicInfo.healthChecks.checks.length > 0) {
       rows.push(['Health Check Results']);
-      rows.push(['Check Name', 'Status', 'Message', 'Description', 'Recommendation']);
+      rows.push(['Check Name', 'Status', 'Severity', 'Message', 'Description', 'Recommendation']);
       
       topicInfo.healthChecks.checks.forEach(check => {
         rows.push([
           check.name,
           check.status,
+          check.severity,
           check.message,
           check.description || '',
           check.recommendation || ''
@@ -113,7 +114,7 @@ class FileService {
   }
 
   async generateHtmlReport(topicInfo) {
-    const templatePath = path.join(__dirname, '/templates/email-template-modern.html');
+    const templatePath = path.resolve(__dirname, '..', 'templates', 'email-template-modern.html');
     const template = await fs.readFile(templatePath, 'utf8');
     return this.populateTemplate(template, topicInfo);
   }
@@ -215,21 +216,32 @@ class FileService {
       lines.push('Health Check Results');
       lines.push('-------------------');
       lines.push(`Total Checks: ${topicInfo.healthChecks.totalChecks}`);
-      lines.push(`✅ Passed: ${topicInfo.healthChecks.passedChecks}`);
       lines.push(`❌ Failed: ${topicInfo.healthChecks.failedChecks}`);
-      lines.push(`⚠️  Warnings: ${topicInfo.healthChecks.warnings}`);
+      lines.push(`✅ Passed: ${topicInfo.healthChecks.passedChecks}`);
       lines.push('');
+      
+      const severityIcons = {
+        'critical': '🔴',
+        'high': '🟠',
+        'medium': '🟡',
+        'low': '🔵'
+      };
       
       topicInfo.healthChecks.checks.forEach(check => {
         const statusIcon = {
           'pass': '✅',
           'fail': '❌',
-          'warning': '⚠️',
-          'error': '🚨',
-          'info': 'ℹ️'
         }[check.status] || '❓';
         
-        lines.push(`${statusIcon} ${check.name}`);
+        let severityText = '';
+        if (check.status === 'fail' && check.severity) {
+          const severityIcon = severityIcons[check.severity] || '';
+          severityText = check.severity.charAt(0).toUpperCase() + check.severity.slice(1) + ' severity';
+          severityText = `${severityIcon} ${severityText}`;
+        }
+
+        lines.push(`${statusIcon} ${check.name} ${severityText}`);
+      
         if (check.description) {
           lines.push(`   📋 ${check.description}`);
         }
@@ -260,16 +272,12 @@ class FileService {
             <div class="summary-label">Total Checks</div>
           </div>
           <div class="summary-item">
-            <div class="summary-number passed">${healthChecks.passedChecks}</div>
-            <div class="summary-label">Passed</div>
-          </div>
-          <div class="summary-item">
-            <div class="summary-number warning">${healthChecks.warnings}</div>
-            <div class="summary-label">Warnings</div>
-          </div>
-          <div class="summary-item">
             <div class="summary-number failed">${healthChecks.failedChecks}</div>
             <div class="summary-label">Failed</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-number passed">${healthChecks.passedChecks}</div>
+            <div class="summary-label">Passed</div>
           </div>
         </div>
       </div>
@@ -281,24 +289,14 @@ class FileService {
         <div class="health-checks">
     `;
 
-    // Sort checks to prioritize failed first, then warning, then others
-    const sortedChecks = [...healthChecks.checks].sort((a, b) => {
-      const statusPriority = { 'fail': 1, 'error': 2, 'warning': 3, 'info': 4, 'pass': 5 };
-      return (statusPriority[a.status] || 6) - (statusPriority[b.status] || 6);
-    });
-
-    sortedChecks.forEach(check => {
-      const statusClass = check.status === 'pass' ? 'pass' : 
-                         check.status === 'warning' ? 'warning' : 
-                         check.status === 'info' ? 'info' : 'fail';
+    healthChecks.checks.forEach(check => {
+      const statusClass = check.status === 'pass' ? 'pass' : 'fail';
+      const statusText = check.status === 'pass' ? 'Passed' : 'Failed';
+      const iconFile = check.status === 'pass' ? 'check-circle.svg' : 'x-circle.svg';
       
-      const statusText = check.status === 'pass' ? 'Passed' : 
-                        check.status === 'warning' ? 'Warning' : 
-                        check.status === 'info' ? 'Info' : 'Failed';
-
-      const iconFile = check.status === 'pass' ? 'check-circle.svg' : 
-                      check.status === 'warning' ? 'alert-triangle.svg' : 
-                      check.status === 'info' ? 'info.svg' : 'x-circle.svg';
+      // Add severity badge for failed checks
+      const severityBadge = check.status === 'fail' && check.severity ? 
+        `<span class="severity-badge ${check.severity}">${check.severity.toUpperCase()}</span>` : '';
       
       healthHtml += `
         <div class="health-check ${statusClass}">
@@ -307,7 +305,8 @@ class FileService {
               <img src="${__dirname}/static/icons/${iconFile}" alt="${statusText}" />
             </div>
             <h3 class="check-title">${check.name}</h3>
-            <span class="status-badge ${statusClass}">${statusText}</span>
+            ${severityBadge}
+            ${check.status === 'pass' ? `<span class="status-badge ${statusClass}">${statusText}</span>` : ''}
           </div>
           ${check.description ? `
           <div class="check-description">
