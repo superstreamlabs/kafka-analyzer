@@ -15,6 +15,11 @@
     "formats": ["json", "csv", "html", "txt"],
     "includeMetadata": true
   },
+  "confluent": {
+    "resourceApiKey": "YOUR_RESOURCE_API_KEY",
+    "resourceApiSecret": "YOUR_RESOURCE_API_SECRET",
+    "clusterId": "lkc-xxxxx"
+  },
   "email": "user@example.com",
-  "_comment": "Confluent Cloud uses official connection methodology with SASL_SSL and PLAIN mechanism. Replace pkc-xxxxx.us-central1.gcp.confluent.cloud:9092 with your actual Confluent Cloud broker URL from your cluster overview. Use your API Key as username and API Secret as password."
+  "_comment": "Confluent Cloud uses official connection methodology with SASL_SSL and PLAIN mechanism. Replace pkc-xxxxx...:9092 with your actual broker URL. Use your API Key as username and API Secret as password. For ACL analysis, provide resource API credentials and Cluster ID (optional). The REST endpoint is derived from your broker host."
 } 

@@ -85,7 +85,8 @@ The full list is under the `./config-examples/` folder:
 - [AWS MSK (SCRAM)](config-examples/config.example.aws-msk.json) - AWS MSK with SCRAM authentication
 - [Confluent Cloud](config-examples/config.example.confluent-cloud.json) - Confluent Cloud setup
 - [Confluent Platform](config-examples/config.example.confluent-platform.json) - Confluent Platform setup
-- [Aiven Kafka](config-examples/config.example.aiven-kafka.json) - Aiven Kafka setup
+- [Aiven Kafka](config-examples/config.example.aiven-kafka-ssl.json) - Aiven Kafka with SSL authentication
+- [Aiven Kafka](config-examples/config.example.aiven-kafka-sasl.json) - Aiven Kafka with SASL SSL authentication
 - [Redpanda](config-examples/config.example.redpanda.json) - Redpanda setup
 - [OIDC Authentication](config-examples/config.example.oidc.json) - OpenID Connect authentication
 - [Azure AD OAuth](config-examples/config.example.azure-ad-oauth.json) - Azure Active Directory
@@ -243,11 +244,12 @@ The full list is under the `./config-examples/` folder:
     "vendor": "aiven",
     "useSasl": true,
     "sasl": {
-      "mechanism": "oauthbearer",
-      "clientId": "your-client-id",
-      "clientSecret": "your-client-secret",
-      "host": "https://my-oauth-server.com",
-      "path": "/oauth/token",
+      "mechanism": "scram-sha-256",
+      "username": "avnadmin",
+      "password": "*********"
+    },
+    "ssl": {
+      "ca": "./certs/ca.pem"
     }
   },
   "file": {
@@ -376,21 +378,30 @@ The tool performs comprehensive health checks on your Kafka cluster to identify 
 - **Quotas Configuration**: Checks if Kafka quotas are configured and being used
 - **Payload Compression**: Checks if payload compression is enabled on user topics
 - **Infinite Retention Policy**: Checks if any topics have infinite retention policy enabled
+- **Unclean Leader Election**: Detects if unclean.leader.election.enable is true
+- **ACL Enforcement**: Verifies authorizer.class.name and allow.everyone.if.no.acl.found settings
+- **Auto Topic Creation**: Detects if auto.create.topics.enable is true
+- **Message Size Consistency**: Validates message.max.bytes < replica.fetch.max.bytes < fetch.max.bytes
+- **Default Topic Replication**: Verifies default.replication.factor >= 3
+- **Controlled Shutdown**: Validates controlled.shutdown.* settings
+- **Consumer Lag Threshold**: Flags groups exceeding lag threshold
+- **Dead Consumer Groups**: Detects groups in DEAD state
+- **Single-Partition High Throughput**: Flags 1-partition topics > 1MB/s
 
 ### Confluent Cloud Health Checks
-- **Replication Factor vs Broker Count**: Ensures topics don't have replication factor > broker count
 - **Topic Partition Distribution**: Checks for balanced partition distribution across topics
 - **Consumer Group Health**: Identifies consumer groups with no active members
 - **Internal Topics Health**: Verifies system topics are healthy
 - **Under-Replicated Partitions**: Checks if topics have fewer in-sync replicas than configured
-- **Rack Awareness**: Checks rack awareness configuration for better availability
-- **Replica Distribution**: Ensures replicas are evenly distributed across brokers
-- **Metrics Configuration**: Verifies metrics accessibility
 - **Logging Configuration**: Confirms built-in logging availability
 - **Authentication Configuration**: Detects if unauthenticated access is enabled (security risk)
 - **Quotas Configuration**: Checks if Kafka quotas are configured and being used
 - **Payload Compression**: Checks if payload compression is enabled on user topics
 - **Infinite Retention Policy**: Checks if any topics have infinite retention policy enabled
+- **ACL Enforcement**: Uses Confluent Cloud API to analyze ACLs for overly permissive rules (requires API credentials)
+- **Consumer Lag Threshold**: Flags groups exceeding lag threshold
+- **Dead Consumer Groups**: Detects groups in DEAD state
+- **Single-Partition High Throughput**: Flags 1-partition topics > 1MB/s
 
 ### Aiven Kafka Health Checks
 - **Replication Factor vs Broker Count**: Ensures topics don't have replication factor > broker count
@@ -401,12 +412,18 @@ The tool performs comprehensive health checks on your Kafka cluster to identify 
 - **Min In-Sync Replicas Configuration**: Checks if topics have min.insync.replicas > replication factor
 - **Rack Awareness**: Checks rack awareness configuration for better availability
 - **Replica Distribution**: Ensures replicas are evenly distributed across brokers
-- **Metrics Configuration**: Verifies metrics accessibility
 - **Logging Configuration**: Confirms built-in logging availability
 - **Authentication Configuration**: Detects if unauthenticated access is enabled (security risk)
 - **Quotas Configuration**: Checks if Kafka quotas are configured and being used
 - **Payload Compression**: Checks if payload compression is enabled on user topics
 - **Infinite Retention Policy**: Checks if any topics have infinite retention policy enabled
+- **Auto Topic Creation**: Detects if auto.create.topics.enable is true
+- **Message Size Consistency**: Validates message.max.bytes < replica.fetch.max.bytes < fetch.max.bytes
+- **Controlled Shutdown**: Validates controlled.shutdown.* settings
+- **Consumer Lag Threshold**: Flags groups exceeding lag threshold
+- **Dead Consumer Groups**: Detects groups in DEAD state
+- **Single-Partition High Throughput**: Flags 1-partition topics > 1MB/s
+- **ACL Enforcement**: Verifies authorizer and allow_everyone_if_no_acl_found equivalents
 
 ### Generic Kafka Health Checks
 - **Replication Factor vs Broker Count**: Ensures topics don't have replication factor > broker count
@@ -417,12 +434,21 @@ The tool performs comprehensive health checks on your Kafka cluster to identify 
 - **Min In-Sync Replicas Configuration**: Checks if topics have min.insync.replicas > replication factor
 - **Rack Awareness**: Checks rack awareness configuration for better availability
 - **Replica Distribution**: Ensures replicas are evenly distributed across brokers
-- **Metrics Configuration**: Verifies JMX metrics configuration
-- **Logging Configuration**: Checks log4j configuration
+- **Metrics Configuration**: Verifies JMX/metrics exposure in broker metadata
+- **Logging Configuration**: Checks logging configuration
 - **Authentication Configuration**: Detects if unauthenticated access is enabled (security risk)
 - **Quotas Configuration**: Checks if Kafka quotas are configured and being used
 - **Payload Compression**: Checks if payload compression is enabled on user topics
 - **Infinite Retention Policy**: Checks if any topics have infinite retention policy enabled
+- **Unclean Leader Election**: Detects if unclean.leader.election.enable is true
+- **ACL Enforcement**: Verifies authorizer.class.name and allow.everyone.if.no.acl.found settings
+- **Auto Topic Creation**: Detects if auto.create.topics.enable is true
+- **Message Size Consistency**: Validates message.max.bytes < replica.fetch.max.bytes < fetch.max.bytes
+- **Default Topic Replication**: Verifies default.replication.factor >= 3 (when broker count ≥ 3)
+- **Controlled Shutdown**: Validates controlled.shutdown.* settings
+- **Consumer Lag Threshold**: Flags groups exceeding lag threshold
+- **Dead Consumer Groups**: Detects groups in DEAD state
+- **Single-Partition High Throughput**: Flags 1-partition topics > 1MB/s
 
 ### Health Check Status
 - ✅ **Pass**: Configuration is healthy and optimal
@@ -542,6 +568,20 @@ The tool includes comprehensive validation that will:
 |-------|------|----------|-------------|
 | `email` | string | No | Email address for generating report files. If not provided, no file output will be generated |
 
+### Confluent Cloud ACL Analysis (Optional)
+
+For enhanced ACL analysis on Confluent Cloud, provide resource API credentials and your Cluster ID. The REST endpoint is automatically derived from your broker host.
+
+| Field | Type | Required | Where |
+|-------|------|----------|-------|
+| `confluent.resourceApiKey` | string | No | config file or CLI prompt |
+| `confluent.resourceApiSecret` | string | No | config file or CLI prompt |
+| `confluent.clusterId` | string | No | config file or CLI prompt |
+
+Notes:
+- The REST endpoint is inferred from your first broker in `kafka.brokers` (host portion, without port).
+- If credentials are not provided, the Confluent ACL analysis is skipped.
+
 ## 🚨 Troubleshooting
 
 ### Common Issues
@@ -633,6 +673,15 @@ SuperStream Kafka Analyzer performs a comprehensive set of health checks on your
 - **Quotas Configuration:** Checks if Kafka quotas are configured and being used.
 - **Payload Compression:** Checks if payload compression is enabled on user topics.
 - **Infinite Retention Policy:** Checks if any topics have infinite retention policy enabled.
+- **Unclean Leader Election:** Detects if unclean.leader.election.enable is true.
+- **ACL Enforcement:** Verifies authorizer.class.name and allow.everyone.if.no.acl.found settings.
+- **Auto Topic Creation:** Detects if auto.create.topics.enable is true.
+- **Message Size Consistency:** Validates message.max.bytes < replica.fetch.max.bytes < fetch.max.bytes.
+- **Default Topic Replication:** Verifies default.replication.factor >= 3 (when broker count ≥ 3).
+- **Controlled Shutdown:** Validates controlled.shutdown.* settings.
+- **Consumer Lag Threshold:** Flags groups exceeding lag threshold.
+- **Dead Consumer Groups:** Detects groups in DEAD state.
+- **Single-Partition High Throughput:** Flags 1-partition topics > 1MB/s.
 
 Each check provides a clear status (✅ Pass, ⚠️ Warning, ❌ Failed, ℹ️ Info) and actionable recommendations.
 

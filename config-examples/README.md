@@ -22,6 +22,20 @@ If you get an error about missing vendor field, add the appropriate vendor value
 
 📚 **For detailed OIDC setup, see [OIDC-AUTH-GUIDE.md](OIDC-AUTH-GUIDE.md)**
 
+## 🔒 ACL Enforcement Analysis
+
+The analyzer now includes comprehensive ACL (Access Control List) enforcement checks for all major Kafka vendors:
+
+- **Apache/MSK**: Verifies `authorizer.class.name` and `allow.everyone.if.no.acl.found` settings
+- **Aiven**: Checks `kafka_enable_authorizer` and `allow_everyone_if_no_acl_found` configuration
+- **Confluent Cloud**: Uses API to analyze ACLs for overly permissive rules (requires additional API credentials)
+
+**Confluent Cloud ACL Analysis:**
+- Optional feature that requires additional API credentials
+- Analyzes ACLs for wildcard permissions and overly broad operations
+- Provides least-privilege access pattern validation
+- Set `confluentApiKey`, `confluentApiSecret`, and `confluentEnvironmentId` in your config
+
 ## Vendor-Specific Authentication Requirements
 
 ### AWS MSK (Amazon Managed Streaming for Apache Kafka)
