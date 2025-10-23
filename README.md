@@ -384,7 +384,6 @@ The tool performs comprehensive health checks on your Kafka cluster to identify 
 - **Message Size Consistency**: Validates message.max.bytes < replica.fetch.max.bytes < fetch.max.bytes
 - **Default Topic Replication**: Verifies default.replication.factor >= 3
 - **Controlled Shutdown**: Validates controlled.shutdown.* settings
-- **Consumer Lag Threshold**: Flags groups exceeding lag threshold
 - **Dead Consumer Groups**: Detects groups in DEAD state
 - **Single-Partition High Throughput**: Flags 1-partition topics > 1MB/s
 
@@ -399,7 +398,6 @@ The tool performs comprehensive health checks on your Kafka cluster to identify 
 - **Payload Compression**: Checks if payload compression is enabled on user topics
 - **Infinite Retention Policy**: Checks if any topics have infinite retention policy enabled
 - **ACL Enforcement**: Uses Confluent Cloud API to analyze ACLs for overly permissive rules (requires API credentials)
-- **Consumer Lag Threshold**: Flags groups exceeding lag threshold
 - **Dead Consumer Groups**: Detects groups in DEAD state
 - **Single-Partition High Throughput**: Flags 1-partition topics > 1MB/s
 
@@ -420,7 +418,6 @@ The tool performs comprehensive health checks on your Kafka cluster to identify 
 - **Auto Topic Creation**: Detects if auto.create.topics.enable is true
 - **Message Size Consistency**: Validates message.max.bytes < replica.fetch.max.bytes < fetch.max.bytes
 - **Controlled Shutdown**: Validates controlled.shutdown.* settings
-- **Consumer Lag Threshold**: Flags groups exceeding lag threshold
 - **Dead Consumer Groups**: Detects groups in DEAD state
 - **Single-Partition High Throughput**: Flags 1-partition topics > 1MB/s
 - **ACL Enforcement**: Verifies authorizer and allow_everyone_if_no_acl_found equivalents
@@ -446,7 +443,6 @@ The tool performs comprehensive health checks on your Kafka cluster to identify 
 - **Message Size Consistency**: Validates message.max.bytes < replica.fetch.max.bytes < fetch.max.bytes
 - **Default Topic Replication**: Verifies default.replication.factor >= 3 (when broker count ≥ 3)
 - **Controlled Shutdown**: Validates controlled.shutdown.* settings
-- **Consumer Lag Threshold**: Flags groups exceeding lag threshold
 - **Dead Consumer Groups**: Detects groups in DEAD state
 - **Single-Partition High Throughput**: Flags 1-partition topics > 1MB/s
 
@@ -679,7 +675,6 @@ SuperStream Kafka Analyzer performs a comprehensive set of health checks on your
 - **Message Size Consistency:** Validates message.max.bytes < replica.fetch.max.bytes < fetch.max.bytes.
 - **Default Topic Replication:** Verifies default.replication.factor >= 3 (when broker count ≥ 3).
 - **Controlled Shutdown:** Validates controlled.shutdown.* settings.
-- **Consumer Lag Threshold:** Flags groups exceeding lag threshold.
 - **Dead Consumer Groups:** Detects groups in DEAD state.
 - **Single-Partition High Throughput:** Flags 1-partition topics > 1MB/s.
 

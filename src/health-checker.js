@@ -146,13 +146,10 @@ class HealthChecker {
     // Check 22: Controlled Shutdown
     await this.checkControlledShutdown(clusterInfo, topics, results);
     
-    // Check 23: Consumer Lag Threshold
-    await this.checkConsumerLagThreshold(clusterInfo, topics, consumerGroups, results);
-    
-    // Check 24: Dead Consumer Groups
+    // Check 23: Dead Consumer Groups
     await this.checkDeadConsumerGroups(clusterInfo, topics, consumerGroups, results);
 
-    // Check 25: Single Partition Topics with High Throughput
+    // Check 24: Single Partition Topics with High Throughput
     await this.checkSinglePartitionHighThroughput(clusterInfo, topics, results);
   }
 
@@ -189,13 +186,10 @@ class HealthChecker {
     // Check 10: ACL Enforcement
     await this.checkAclEnforcement(clusterInfo, topics, results);
 
-    // Check 11: Consumer Lag Threshold
-    await this.checkConsumerLagThreshold(clusterInfo, topics, consumerGroups, results);
-
-    // Check 12: Dead Consumer Groups
+    // Check 11: Dead Consumer Groups
     await this.checkDeadConsumerGroups(clusterInfo, topics, consumerGroups, results);
 
-    // Check 13: Single Partition Topics with High Throughput
+    // Check 12: Single Partition Topics with High Throughput
     await this.checkSinglePartitionHighThroughput(clusterInfo, topics, results);
     
     // TODO: Implement other Confluent Cloud specific checks
@@ -253,16 +247,13 @@ class HealthChecker {
     // Check 16: Controlled Shutdown
     await this.checkControlledShutdown(clusterInfo, topics, results);
     
-    // Check 17: Consumer Lag Threshold
-    await this.checkConsumerLagThreshold(clusterInfo, topics, consumerGroups, results);
-    
-    // Check 18: Dead Consumer Groups
+    // Check 17: Dead Consumer Groups
     await this.checkDeadConsumerGroups(clusterInfo, topics, consumerGroups, results);
     
-    // Check 19: Single Partition Topics with High Throughput
+    // Check 18: Single Partition Topics with High Throughput
     await this.checkSinglePartitionHighThroughput(clusterInfo, topics, results);
 
-    // Check 20: ACL Enforcement
+    // Check 19: ACL Enforcement
     await this.checkAclEnforcement(clusterInfo, topics, results);
     
     // TODO: Implement other Aiven specific checks
@@ -332,13 +323,10 @@ class HealthChecker {
     // Check 20: Controlled Shutdown
     await this.checkControlledShutdown(clusterInfo, topics, results);
     
-    // Check 21: Consumer Lag Threshold
-    await this.checkConsumerLagThreshold(clusterInfo, topics, consumerGroups, results);
-    
-    // Check 22: Dead Consumer Groups
+    // Check 21: Dead Consumer Groups
     await this.checkDeadConsumerGroups(clusterInfo, topics, consumerGroups, results);
     
-    // Check 23: Single Partition Topics with High Throughput
+    // Check 22: Single Partition Topics with High Throughput
     await this.checkSinglePartitionHighThroughput(clusterInfo, topics, results);
   }
 
@@ -391,68 +379,6 @@ class HealthChecker {
     }
   }
 
-  async checkConsumerLagThreshold(clusterInfo, topics, consumerGroups, results) {
-    const checkName = 'Consumer Lag Threshold';
-    try {
-      // Always compute lag using Kafka client (assume input lacks lag)
-      if (!consumerGroups || consumerGroups.length === 0) {
-        this.addCheck(results, 'consumer-lag-threshold', checkName, 'pass', '', 'No consumer groups found');
-        return;
-      }
-
-      let analysis;
-      try {
-        const { KafkaClient } = require('./kafka-client.js');
-        const client = new KafkaClient(this.config || {});
-        await client.connect();
-        const groupIds = consumerGroups.map(g => g.groupId).filter(Boolean);
-        const computed = await client.computeLagForGroups(groupIds);
-        await client.disconnect();
-
-        const threshold = 10000;
-        const laggingGroups = (computed || [])
-          .filter(c => typeof c.totalLag === 'number' && c.totalLag > threshold)
-          .map(c => ({ groupId: c.groupId, totalLag: c.totalLag, topics: c.topics }));
-
-        analysis = {
-          threshold,
-          laggingGroups,
-          hasIssues: laggingGroups.length > 0
-        };
-      } catch (lagErr) {
-        this.addCheck(results, 'consumer-lag-threshold', checkName, 'fail', 'high',
-          `Unable to compute consumer lag via offsets: ${lagErr.message}`,
-          'Ensure client has permissions to fetch group offsets and topic end offsets');
-        return;
-      }
-
-      if (!analysis.hasIssues) {
-        this.addCheck(results, 'consumer-lag-threshold', checkName, 'pass', '',
-          `All consumer groups are within lag threshold (≤ ${analysis.threshold})`);
-      } else {
-        const details = analysis.laggingGroups.map(g => {
-          const lines = (g.topics || [])
-            .slice(0, 10)
-            .map(t => `  ${t.topic}: ${t.lag}`)
-            .join('\n');
-          return `${g.groupId}: totalLag=${g.totalLag}\n${lines}`;
-        }).join('\n');
-        this.addCheck(
-          results,
-          'consumer-lag-threshold',
-          checkName,
-          'fail',
-          'high',
-          `Detected ${analysis.laggingGroups.length} group(s) exceeding lag threshold (${analysis.threshold}): ${details}`,
-          'Scale consumer instances, optimize processing logic, or increase partitions for parallelism'
-        );
-      }
-    } catch (error) {
-      this.addCheck(results, 'consumer-lag-threshold', checkName, 'fail', 'high',
-        'Unable to analyze consumer lag threshold',
-        'Ensure consumer group lag metrics are available and retry');
-    }
-  }
 
   async checkReplicationFactor(clusterInfo, topics, results) {
     const checkName = 'Replication Factor vs Broker Count';
@@ -1592,22 +1518,33 @@ filterOutSystemConsumerGroups(consumerGroups) {
       // 2. allow.everyone.if.no.acl.found=false
       
       let aclEnforcementEnabled = true;
+      const missingConfigs = [];
+      const incorrectConfigs = [];
 
       // Check broker configurations for ACL settings
-      clusterInfo.brokers.forEach((broker) => {
+      clusterInfo.brokers.forEach((broker, brokerIndex) => {
         if (broker.config) {
           // Check for authorizer.class.name
           const authorizerClass = broker.config['authorizer.class.name'];
-          if (!authorizerClass || !authorizerClass.value || authorizerClass.value !== 'kafka.security.authorizer.AclAuthorizer') {
+          if (!authorizerClass || !authorizerClass.value) {
+            missingConfigs.push(`Broker ${brokerIndex + 1}: authorizer.class.name is not set`);
+            aclEnforcementEnabled = false;
+          } else if (authorizerClass.value !== 'kafka.security.authorizer.AclAuthorizer') {
+            incorrectConfigs.push(`Broker ${brokerIndex + 1}: authorizer.class.name is set to '${authorizerClass.value}' (should be 'kafka.security.authorizer.AclAuthorizer')`);
             aclEnforcementEnabled = false;
           }
 
           // Check for allow.everyone.if.no.acl.found
           const allowEveryone = broker.config['allow.everyone.if.no.acl.found'];
-          if (!allowEveryone || allowEveryone.value === undefined || allowEveryone.value !== 'false' && allowEveryone.value !== false) {
+          if (!allowEveryone || allowEveryone.value === undefined) {
+            missingConfigs.push(`Broker ${brokerIndex + 1}: allow.everyone.if.no.acl.found is not set`);
+            aclEnforcementEnabled = false;
+          } else if (allowEveryone.value !== 'false' && allowEveryone.value !== false) {
+            incorrectConfigs.push(`Broker ${brokerIndex + 1}: allow.everyone.if.no.acl.found is set to '${allowEveryone.value}' (should be 'false')`);
             aclEnforcementEnabled = false;
           }
         } else {
+          missingConfigs.push(`Broker ${brokerIndex + 1}: No configuration available`);
           aclEnforcementEnabled = false;
         }
       });
@@ -1617,8 +1554,18 @@ filterOutSystemConsumerGroups(consumerGroups) {
           'ACL enforcement is properly configured - authorizer is enabled and allow.everyone.if.no.acl.found=false',
           'ACL enforcement is working correctly to prevent unauthorized access');
       } else {
+        let specificIssues = [];
+        if (missingConfigs.length > 0) {
+          specificIssues.push(`Missing configurations: ${missingConfigs.join(', ')}`);
+        }
+        if (incorrectConfigs.length > 0) {
+          specificIssues.push(`Incorrect configurations: ${incorrectConfigs.join(', ')}`);
+        }
+        
+        const specificDescription = specificIssues.length > 0 ? specificIssues.join('. ') : 'ACL enforcement is not properly configured';
+        
         this.addCheck(results, 'acl-enforcement', checkName, 'fail', 'critical',
-          'ACL enforcement is not properly configured',
+          specificDescription,
           'Recommended: Set authorizer.class.name=kafka.security.authorizer.AclAuthorizer and allow.everyone.if.no.acl.found=false in server.properties for all brokers');
       }
 
@@ -1662,8 +1609,45 @@ filterOutSystemConsumerGroups(consumerGroups) {
       }
 
       if (aclAnalysis.hasOverlyPermissiveRules) {
+        // Group issues by type for organized display
+        const issueTypes = {};
+        aclAnalysis.issues.forEach(issue => {
+          if (!issueTypes[issue.type]) {
+            issueTypes[issue.type] = [];
+          }
+          issueTypes[issue.type].push(issue);
+        });
+
+        // Create formatted output with all individual ACL details
+        let formattedIssues = [];
+        
+        Object.entries(issueTypes).forEach(([type, issues]) => {
+          const typeName = type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+          formattedIssues.push(`\n${typeName} (${issues.length} issues):`);
+          
+          // Show every individual ACL issue with full details
+          issues.forEach((issue, index) => {
+            const principal = issue.principal ? issue.principal.replace('User:', '') : 'Unknown';
+            const resourceType = issue.resourceType || 'Unknown';
+            const resourceName = issue.resourceName || 'Unknown';
+            const operation = issue.operation || 'Unknown';
+            const permission = issue.permission || 'Unknown';
+            const host = issue.host || '*';
+            
+            formattedIssues.push(`  ${index + 1}. Principal: ${principal}`);
+            formattedIssues.push(`     Resource: ${resourceType}:${resourceName}`);
+            formattedIssues.push(`     Operation: ${operation}`);
+            formattedIssues.push(`     Permission: ${permission}`);
+            formattedIssues.push(`     Host: ${host}`);
+            formattedIssues.push(`     Issue: ${issue.description}`);
+            formattedIssues.push(''); // Empty line for readability
+          });
+        });
+
+        const formattedDescription = `Found ${aclAnalysis.issues.length} overly permissive ACL rules:${formattedIssues.join('\n')}`;
+        
         this.addCheck(results, 'acl-enforcement', checkName, 'fail', 'critical',
-          `Found ${aclAnalysis.issues.length} overly permissive ACL rules in Confluent Cloud`,
+          formattedDescription,
           'Review and restrict overly permissive ACL rules to follow least-privilege access patterns. Remove wildcard permissions and overly broad operations.');
       } else {
         this.addCheck(results, 'acl-enforcement', checkName, 'pass', '',
@@ -1979,7 +1963,7 @@ filterOutSystemConsumerGroups(consumerGroups) {
       'unclean-leader-election':
         'Checks if unclean leader election is enabled, which can cause data loss if out-of-sync replicas become leaders. Healthy: unclean.leader.election.enable=false. Failed: unclean.leader.election.enable=true (critical security risk).',
       'acl-enforcement':
-        'Checks if ACL (Access Control List) enforcement is properly configured to prevent unauthorized access. For Apache/MSK: Verifies authorizer.class.name is set and allow.everyone.if.no.acl.found=false. Healthy: ACL enforcement is enabled. Failed: ACL enforcement is disabled (critical security risk).',
+        'Checks if ACL (Access Control List) enforcement is properly configured to prevent unauthorized access. For Apache/MSK: Verifies authorizer.class.name is set and allow.everyone.if.no.acl.found=false. For Confluent Cloud: Analyzes ACLs for overly permissive rules using Confluent Cloud API. Healthy: ACL enforcement is enabled with least-privilege access patterns. Failed: ACL enforcement is disabled or overly permissive rules found (critical security risk).',
       'auto-topic-creation':
         'Checks if auto topic creation is enabled, which can lead to accidental topics with RF=1 and default configurations. For Apache/MSK/Aiven: Verifies auto.create.topics.enable=false. For Confluent Cloud: Already disabled by platform. Healthy: Auto topic creation is disabled. Failed: Auto topic creation is enabled (critical security risk).',
       'message-size-consistency':

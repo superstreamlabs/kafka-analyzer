@@ -313,7 +313,7 @@ class FileService {
             ${check.description}
           </div>` : ''}
           <div class="check-message">
-            ${check.message}
+            ${check.message.replace(/\n/g, '<br>')}
           </div>
           ${check.recommendation ? `
           <div class="check-recommendation">
