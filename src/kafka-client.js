@@ -37,7 +37,7 @@ class KafkaClient {
       };
 
       // If SSL keys are provided, disable SASL
-      if (this.config.ssl && (this.config.ssl.ca || this.config.ssl.cert || this.config.ssl.key)) {
+      if ((this.config.ssl && (this.config.ssl.ca || this.config.ssl.cert || this.config.ssl.key)) && !this.config.useSasl) {
         this.config.useSasl = false;
       }
       
