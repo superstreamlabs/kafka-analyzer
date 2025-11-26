@@ -3,7 +3,7 @@ name: Trigger Jenkins Job
 on:
   push:
     branches:
-      - impr-pipeline
+      - latest
     paths:
       - package.json
 
