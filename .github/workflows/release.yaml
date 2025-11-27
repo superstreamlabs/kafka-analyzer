@@ -19,6 +19,14 @@ jobs:
         env:
           JENKINS_TOKEN: ${{ secrets.JENKINS_TOKEN }}
         run: |
-          curl -X POST https://jenkins.superstream.ai/job/DevOps/job/Superstream/job/SDK/job/kafka-analyzer/build \
-          --user "team@superstream.ai:$JENKINS_TOKEN" \
-          --header "Content-Type: application/json"
+          HTTP_STATUS=$(curl -w "%{http_code}" -o /tmp/jenkins_response.txt -f -X POST \
+            "https://jenkins.superstream.ai/job/DevOps/job/Superstream/job/SDK/job/kafka-analyzer/build" \
+            --user "team@superstream.ai:$JENKINS_TOKEN")
+          
+          if [ $? -ne 0 ] || [ "$HTTP_STATUS" -ne 201 ] && [ "$HTTP_STATUS" -ne 200 ]; then
+            echo "Jenkins trigger failed with HTTP status: $HTTP_STATUS"
+            cat /tmp/jenkins_response.txt
+            exit 1
+          fi
+          
+          echo "Successfully triggered Jenkins build (HTTP $HTTP_STATUS)"        
