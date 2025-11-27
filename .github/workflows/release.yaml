@@ -1,0 +1,24 @@
+name: Trigger Jenkins Job
+
+on:
+  push:
+    branches:
+      - latest
+    paths:
+      - package.json
+
+jobs:
+  trigger-jenkins:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Trigger Jenkins Job
+        env:
+          JENKINS_TOKEN: ${{ secrets.JENKINS_TOKEN }}
+        run: |
+          curl -X POST https://jenkins.superstream.ai/job/DevOps/job/Superstream/job/SDK/job/kafka-analyzer/build \
+          --user "team@superstream.ai:$JENKINS_TOKEN" \
+          --header "Content-Type: application/json"
