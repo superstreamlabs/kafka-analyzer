@@ -1,32 +1,59 @@
-name: Trigger Jenkins Job
+name: Release Package
 
 on:
   push:
     branches:
-      - latest
-    paths:
-      - package.json
+      - action-release
+    # paths:
+    #   - package.json
 
 jobs:
-  trigger-jenkins:
-    runs-on: self-hosted
+  release:
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-      - name: Trigger Jenkins Job
-        env:
-          JENKINS_TOKEN: ${{ secrets.JENKINS_TOKEN }}
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Extract version
+        id: version
         run: |
-          HTTP_STATUS=$(curl -w "%{http_code}" -o /tmp/jenkins_response.txt -f -X POST \
-            "https://jenkins.superstream.ai/job/DevOps/job/Superstream/job/SDK/job/kafka-analyzer/build" \
-            --user "team@superstream.ai:$JENKINS_TOKEN")
-          
-          if [ $? -ne 0 ] || [ "$HTTP_STATUS" -ne 201 ] && [ "$HTTP_STATUS" -ne 200 ]; then
-            echo "Jenkins trigger failed with HTTP status: $HTTP_STATUS"
-            cat /tmp/jenkins_response.txt
-            exit 1
-          fi
-          
-          echo "Successfully triggered Jenkins build (HTTP $HTTP_STATUS)"        
+          VERSION=$(jq -r .version package.json)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Install dependencies
+        run: |
+          npm install
+          npm pack
+
+      - name: Publish to NPM
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish
+
+      - name: Configure Git
+        run: |
+          git config user.email "github-actions@superstream.ai"
+          git config user.name "GitHub Actions"
+
+      - name: Create and push tag
+        run: |
+          git tag -a v${{ steps.version.outputs.version }} -m "v${{ steps.version.outputs.version }}"
+          git push origin v${{ steps.version.outputs.version }}
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create v${{ steps.version.outputs.version }} \
+            superstream-kafka-analyzer-${{ steps.version.outputs.version }}.tgz \
+            --generate-notes  
