@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - action-release
+      
     # paths:
     #   - package.json
 
