@@ -1,4 +1,4 @@
-name: Publish to NPM
+name: Release Package
 
 on:
   push:
@@ -8,24 +8,53 @@ on:
     #   - package.json
 
 jobs:
-  publish:
+  release:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
 
+      - name: Extract version
+        id: version
+        run: |
+          VERSION=$(jq -r .version package.json)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
       - name: Install dependencies
-        run: npm install
+        run: |
+          npm install
+          npm pack
 
       - name: Publish to NPM
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" > ~/.npmrc
-          npm publish  
+          npm publish
+
+      - name: Configure Git
+        run: |
+          git config user.email "github-actions@superstream.ai"
+          git config user.name "GitHub Actions"
+
+      - name: Create and push tag
+        run: |
+          git tag -a v${{ steps.version.outputs.version }} -m "v${{ steps.version.outputs.version }}"
+          git push origin v${{ steps.version.outputs.version }}
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create v${{ steps.version.outputs.version }} \
+            superstream-kafka-analyzer-${{ steps.version.outputs.version }}.tgz \
+            --generate-notes  
