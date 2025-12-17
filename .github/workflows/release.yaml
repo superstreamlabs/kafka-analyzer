@@ -66,13 +66,13 @@ jobs:
         with:
           payload: |
             {
-              "text": "✅ kafka-analyzer Release SUCCESS",
+              "text": "✅ kafka-analyzer Release SUCCESS - v${{ steps.version.outputs.version }}",
               "blocks": [
                 {
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "✅ *kafka-analyzer Release Successful*\n*Version:* v${{ steps.version.outputs.version }}\n*Branch:* ${{ github.ref_name }}\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>\n*Release:* <${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ steps.version.outputs.version }}|View Release>"
+                    "text": "✅ *kafka-analyzer v${{ steps.version.outputs.version }} Release Successful*\n*Version:* v${{ steps.version.outputs.version }}\n*Branch:* ${{ github.ref_name }}\n*Commit:* <${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}|${{ github.sha }}>\n*Release:* <${{ github.server_url }}/${{ github.repository }}/releases/tag/v${{ steps.version.outputs.version }}|View Release>"
                   }
                 }
               ]
