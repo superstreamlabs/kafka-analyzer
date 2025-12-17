@@ -3,10 +3,10 @@ name: Release Package
 on:
   push:
     branches:
-      - action-release
+      - master
       
-    # paths:
-    #   - package.json
+    paths:
+      - package.json
 
 jobs:
   release:
