@@ -112,7 +112,9 @@ class ConfluentService {
           description: 'Wildcard resource access',
           resourceType,
           resourceName,
+          patternType,
           principal,
+          host,
           operation,
           permission
         });
@@ -125,7 +127,9 @@ class ConfluentService {
           description: 'Wildcard user principal',
           resourceType,
           resourceName,
+          patternType,
           principal,
+          host,
           operation,
           permission
         });
@@ -139,7 +143,9 @@ class ConfluentService {
           description: 'ALL operations permission',
           resourceType,
           resourceName,
+          patternType,
           principal,
+          host,
           operation,
           permission
         });
@@ -153,7 +159,9 @@ class ConfluentService {
           description: 'ACL applies to any host',
           resourceType,
           resourceName,
+          patternType,
           principal,
+          host,
           operation,
           permission
         });
@@ -168,6 +176,8 @@ class ConfluentService {
           resourceType,
           resourceName,
           principal,
+          patternType,
+          host,
           operation,
           permission
         });
