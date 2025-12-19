@@ -217,44 +217,38 @@ class HealthChecker {
     // Check 6: Min In-Sync Replicas Configuration
     await this.checkMinInsyncReplicas(topics, results);
     
-    // Check 7: Rack Awareness
-    await this.checkRackAwareness(clusterInfo, topics, results);
-    
-    // Check 8: Replica Distribution
+    // Check 7: Replica Distribution
     await this.checkReplicaDistribution(clusterInfo, topics, results);
     
-    // Check 9: Logging Configuration
+    // Check 8: Logging Configuration
     await this.checkLoggingConfiguration(clusterInfo, topics, results);
     
-    // Check 10: Authentication Configuration
+    // Check 9: Authentication Configuration
     await this.checkAuthenticationConfiguration(clusterInfo, topics, results);
     
-    // Check 11: Quotas Configuration
+    // Check 10: Quotas Configuration
     await this.checkQuotasConfiguration(clusterInfo, topics, results);
     
-    // Check 12: Payload Compression
+    // Check 11: Payload Compression
     await this.checkPayloadCompression(clusterInfo, topics, results);
     
-    // Check 13: Infinite Retention Policy
+    // Check 12: Infinite Retention Policy
     await this.checkInfiniteRetentionPolicy(clusterInfo, topics, results);
     
-    // Check 14: Auto Topic Creation
+    // Check 13: Auto Topic Creation
     await this.checkAutoTopicCreation(clusterInfo, topics, results);
     
-    // Check 15: Message Size Consistency
+    // Check 14: Message Size Consistency
     await this.checkMessageSizeConsistency(clusterInfo, topics, results);
     
-    // Check 16: Controlled Shutdown
+    // Check 15: Controlled Shutdown
     await this.checkControlledShutdown(clusterInfo, topics, results);
     
-    // Check 17: Dead Consumer Groups
+    // Check 16: Dead Consumer Groups
     await this.checkDeadConsumerGroups(clusterInfo, topics, consumerGroups, results);
     
-    // Check 18: Single Partition Topics with High Throughput
+    // Check 17: Single Partition Topics with High Throughput
     await this.checkSinglePartitionHighThroughput(clusterInfo, topics, results);
-
-    // Check 19: ACL Enforcement
-    await this.checkAclEnforcement(clusterInfo, topics, results);
     
     // TODO: Implement other Aiven specific checks
     this.addCheck(results, 'aiven', 'Aiven checks', 'pass', '', 'Not implemented yet');
@@ -634,6 +628,11 @@ filterOutSystemConsumerGroups(consumerGroups) {
   async checkRackAwareness(clusterInfo, topics, results) {
     const checkName = 'Rack Awareness';
     
+    // Aiven-specific: Rack awareness is managed automatically by Aiven, so this check is not relevant
+    if (this.vendor === 'aiven') {
+      return;
+    }
+    
     // Check if brokers have rack information
     const brokersWithRacks = clusterInfo.brokers.filter(broker => 
       broker.rack && broker.rack !== '' && broker.rack !== null
@@ -830,16 +829,32 @@ filterOutSystemConsumerGroups(consumerGroups) {
     const checkName = 'Metrics Configuration';
     
     try {
+      const brokers = Array.isArray(clusterInfo?.brokers) ? clusterInfo.brokers : [];
+      const totalBrokers = brokers.length;
+
       // Check if brokers have JMX ports configured (common ports: 9999, 9998, 9101)
-      const brokersWithJmx = clusterInfo.brokers.filter(broker => {
-        // Check if broker has JMX-related metadata
-        return broker.jmxPort || 
-               broker.metricsPort || 
-               (broker.endpoints && broker.endpoints.some(ep => ep.includes('jmx') || ep.includes('metrics')));
-      });
-      
-      const totalBrokers = clusterInfo.brokers.length;
-      const brokersWithMetrics = brokersWithJmx.length;
+      // NOTE: We can't reliably infer JMX enablement from broker configs/metadata alone, so we
+      // use a lightweight reachability probe on these common ports.
+      const portsToProbe = [9999, 9998, 9101];
+      const probeTimeoutMs = 1500;
+
+      const probeResults = await Promise.allSettled(
+        brokers.map(async (broker) => {
+          const host = broker?.host || broker?.endpoint || broker?.address;
+          if (!host) return false;
+          const cleanHost = String(host).split(':')[0];
+
+          for (const port of portsToProbe) {
+            // eslint-disable-next-line no-await-in-loop
+            const ok = await this.testPort(cleanHost, port, probeTimeoutMs);
+            if (ok) return true;
+          }
+
+          return false;
+        })
+      );
+
+      const brokersWithMetrics = probeResults.filter(r => r.status === 'fulfilled' && r.value === true).length;
       
       if (brokersWithMetrics === 0) {
         this.addCheck(results, 'metrics-enabled', checkName, 'fail', 'low', 
@@ -1513,10 +1528,10 @@ filterOutSystemConsumerGroups(consumerGroups) {
 
     try {
       // Check if ACL enforcement is properly configured
-      // For Apache Kafka and AWS MSK, we need to verify:
-      // 1. authorizer.class.name is set (should be kafka.security.authorizer.AclAuthorizer)
-      // 2. allow.everyone.if.no.acl.found=false
+      // For Apache Kafka: Verify authorizer.class.name and allow.everyone.if.no.acl.found
+      // For AWS MSK: Only check allow.everyone.if.no.acl.found (authorizer is managed by AWS)
       
+      const isAwsMsk = this.vendor === 'aws-msk';
       let aclEnforcementEnabled = true;
       const missingConfigs = [];
       const incorrectConfigs = [];
@@ -1524,34 +1539,39 @@ filterOutSystemConsumerGroups(consumerGroups) {
       // Check broker configurations for ACL settings
       clusterInfo.brokers.forEach((broker, brokerIndex) => {
         if (broker.config) {
-          // Check for authorizer.class.name
-          const authorizerClass = broker.config['authorizer.class.name'];
-          if (!authorizerClass || !authorizerClass.value) {
-            missingConfigs.push(`Broker ${brokerIndex + 1}: authorizer.class.name is not set`);
-            aclEnforcementEnabled = false;
-          } else if (authorizerClass.value !== 'kafka.security.authorizer.AclAuthorizer') {
-            incorrectConfigs.push(`Broker ${brokerIndex + 1}: authorizer.class.name is set to '${authorizerClass.value}' (should be 'kafka.security.authorizer.AclAuthorizer')`);
-            aclEnforcementEnabled = false;
+          // Check for authorizer.class.name (only for Apache Kafka, not MSK)
+          if (!isAwsMsk) {
+            const authorizerClass = broker.config['authorizer.class.name'];
+            if (!authorizerClass || !authorizerClass.value) {
+              missingConfigs.push(`Broker ${brokerIndex + 1}: authorizer.class.name is not set`);
+              aclEnforcementEnabled = false;
+            } else if (authorizerClass.value !== 'kafka.security.authorizer.AclAuthorizer') {
+              incorrectConfigs.push(`Broker ${brokerIndex + 1}: authorizer.class.name is set to '${authorizerClass.value}' (should be 'kafka.security.authorizer.AclAuthorizer')`);
+              aclEnforcementEnabled = false;
+            }
           }
 
           // Check for allow.everyone.if.no.acl.found
+          // null/undefined is acceptable (default behavior is secure), only flag if explicitly set to non-false value
           const allowEveryone = broker.config['allow.everyone.if.no.acl.found'];
-          if (!allowEveryone || allowEveryone.value === undefined) {
-            missingConfigs.push(`Broker ${brokerIndex + 1}: allow.everyone.if.no.acl.found is not set`);
-            aclEnforcementEnabled = false;
-          } else if (allowEveryone.value !== 'false' && allowEveryone.value !== false) {
-            incorrectConfigs.push(`Broker ${brokerIndex + 1}: allow.everyone.if.no.acl.found is set to '${allowEveryone.value}' (should be 'false')`);
+          if (allowEveryone != undefined && allowEveryone.value != null && allowEveryone.value !== 'false' && allowEveryone.value !== false) {
+            incorrectConfigs.push(`Broker ${brokerIndex + 1}: allow.everyone.if.no.acl.found is set to '${allowEveryone.value}' (should be 'false' or unset)`);
             aclEnforcementEnabled = false;
           }
         } else {
-          missingConfigs.push(`Broker ${brokerIndex + 1}: No configuration available`);
-          aclEnforcementEnabled = false;
+          if (!isAwsMsk) {
+            missingConfigs.push(`Broker ${brokerIndex + 1}: No configuration available`);
+            aclEnforcementEnabled = false;
+          }
         }
       });
 
       if (aclEnforcementEnabled) {
+        const message = isAwsMsk 
+          ? 'ACL enforcement is properly configured - allow.everyone.if.no.acl.found is not enabled'
+          : 'ACL enforcement is properly configured - authorizer is enabled and allow.everyone.if.no.acl.found=false';
         this.addCheck(results, 'acl-enforcement', checkName, 'pass', '',
-          'ACL enforcement is properly configured - authorizer is enabled and allow.everyone.if.no.acl.found=false',
+          message,
           'ACL enforcement is working correctly to prevent unauthorized access');
       } else {
         let specificIssues = [];
@@ -1564,15 +1584,23 @@ filterOutSystemConsumerGroups(consumerGroups) {
         
         const specificDescription = specificIssues.length > 0 ? specificIssues.join('. ') : 'ACL enforcement is not properly configured';
         
+        // Different recommendations for MSK vs Apache Kafka
+        let recommendation;
+        if (isAwsMsk) {
+          recommendation = 'Recommended: Ensure allow.everyone.if.no.acl.found is not set or is set to false in MSK cluster configuration';
+        } else {
+          recommendation = 'Recommended: Set authorizer.class.name=kafka.security.authorizer.AclAuthorizer and allow.everyone.if.no.acl.found=false in server.properties for all brokers';
+        }
+        
         this.addCheck(results, 'acl-enforcement', checkName, 'fail', 'critical',
           specificDescription,
-          'Recommended: Set authorizer.class.name=kafka.security.authorizer.AclAuthorizer and allow.everyone.if.no.acl.found=false in server.properties for all brokers');
+          recommendation);
       }
 
     } catch (error) {
       this.addCheck(results, 'acl-enforcement', checkName, 'fail', 'critical',
         'Unable to verify ACL enforcement configuration',
-        'Check server.properties for authorizer.class.name and allow.everyone.if.no.acl.found settings on all brokers');
+        'Check server.properties for ACL enforcement settings on all brokers');
     }
   }
 
@@ -1609,42 +1637,62 @@ filterOutSystemConsumerGroups(consumerGroups) {
       }
 
       if (aclAnalysis.hasOverlyPermissiveRules) {
-        // Group issues by type for organized display
-        const issueTypes = {};
-        aclAnalysis.issues.forEach(issue => {
-          if (!issueTypes[issue.type]) {
-            issueTypes[issue.type] = [];
+        const issuesByAclIndex = new Map();
+
+        (aclAnalysis.issues || []).forEach((issue) => {
+          const key = typeof issue.aclIndex === 'number' ? issue.aclIndex : String(issue.aclIndex);
+
+          if (!issuesByAclIndex.has(key)) {
+            issuesByAclIndex.set(key, {
+              representative: issue,
+              issueTypes: new Set(),
+              issueDescriptions: new Set(),
+            });
           }
-          issueTypes[issue.type].push(issue);
+
+          const entry = issuesByAclIndex.get(key);
+          if (issue.type) entry.issueTypes.add(issue.type);
+          if (issue.description) entry.issueDescriptions.add(issue.description);
         });
 
-        // Create formatted output with all individual ACL details
-        let formattedIssues = [];
-        
-        Object.entries(issueTypes).forEach(([type, issues]) => {
-          const typeName = type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-          formattedIssues.push(`\n${typeName} (${issues.length} issues):`);
-          
-          // Show every individual ACL issue with full details
-          issues.forEach((issue, index) => {
-            const principal = issue.principal ? issue.principal.replace('User:', '') : 'Unknown';
-            const resourceType = issue.resourceType || 'Unknown';
-            const resourceName = issue.resourceName || 'Unknown';
-            const operation = issue.operation || 'Unknown';
-            const permission = issue.permission || 'Unknown';
-            const host = issue.host || '*';
-            
-            formattedIssues.push(`  ${index + 1}. Principal: ${principal}`);
-            formattedIssues.push(`     Resource: ${resourceType}:${resourceName}`);
-            formattedIssues.push(`     Operation: ${operation}`);
-            formattedIssues.push(`     Permission: ${permission}`);
-            formattedIssues.push(`     Host: ${host}`);
-            formattedIssues.push(`     Issue: ${issue.description}`);
-            formattedIssues.push(''); // Empty line for readability
-          });
+        const aclRules = Array.from(issuesByAclIndex.values());
+        const ruleCount = aclRules.length;
+
+        // Create formatted output with exactly one item per ACL rule
+        const formattedIssues = [];
+
+        aclRules.forEach((entry, idx) => {
+          const issue = entry.representative || {};
+          const principal = issue.principal ? String(issue.principal).replace('User:', '') : 'Unknown';
+          const resourceType = issue.resourceType || 'Unknown';
+          const resourceName = issue.resourceName || 'Unknown';
+          const patternType = issue.patternType || '';
+          const operation = issue.operation || 'Unknown';
+          const permission = issue.permission || 'Unknown';
+          const host = (typeof issue.host !== 'undefined' && issue.host !== null && String(issue.host).length > 0)
+            ? String(issue.host)
+            : '*';
+
+          const issueTypes = Array.from(entry.issueTypes).sort();
+          const issueDescriptions = Array.from(entry.issueDescriptions).sort();
+
+          formattedIssues.push(`  ${idx + 1}. Principal: ${principal}`);
+          formattedIssues.push(`     Resource: ${resourceType}:${resourceName}${patternType ? ` (${patternType})` : ''}`);
+          formattedIssues.push(`     Operation: ${operation}`);
+          formattedIssues.push(`     Permission: ${permission}`);
+          formattedIssues.push(`     Host: ${host}`);
+
+          if (issueTypes.length > 0) {
+            formattedIssues.push(`     Flags: ${issueTypes.join(', ')}`);
+          }
+          if (issueDescriptions.length > 0) {
+            formattedIssues.push(`     Issues: ${issueDescriptions.join('; ')}`);
+          }
+
+          formattedIssues.push(''); // Empty line for readability
         });
 
-        const formattedDescription = `Found ${aclAnalysis.issues.length} overly permissive ACL rules:${formattedIssues.join('\n')}`;
+        const formattedDescription = `Found ${ruleCount} overly permissive ACL rule(s):\n${formattedIssues.join('\n')}`.trim();
         
         this.addCheck(results, 'acl-enforcement', checkName, 'fail', 'critical',
           formattedDescription,
@@ -1664,6 +1712,11 @@ filterOutSystemConsumerGroups(consumerGroups) {
 
   async checkAutoTopicCreation(clusterInfo, topics, results) {
     const checkName = 'Auto Topic Creation Configuration';
+    
+    // This check is not relevant for Aiven
+    if (this.vendor === 'aiven') {
+      return;
+    }
     
     try {
       // Check if auto topic creation is enabled in broker configurations
